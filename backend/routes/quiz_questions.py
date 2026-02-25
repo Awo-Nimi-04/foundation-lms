@@ -1,0 +1,121 @@
+import json
+from extensions import db
+from models.quiz import Quiz
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import get_jwt_identity
+from utils.decorators import instructor_required
+from models.quiz import QuizQuestion
+from models.course import Course
+from models.course_material import CourseMaterial
+
+quiz_questions_bp = Blueprint("quiz_questions", __name__, url_prefix="/questions")
+
+@quiz_questions_bp.route("/<int:question_id>/edit_question", methods=["PATCH"])
+@instructor_required
+def edit_question(question_id):
+
+    identity = json.loads(get_jwt_identity())
+    instructor_id = int(identity["id"])
+
+    question = QuizQuestion.query.get_or_404(question_id)
+    quiz = Quiz.query.get(question.quiz_id)
+    course = Course.query.get_or_404(quiz.course_id)
+
+
+    if course.instructor_id != instructor_id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    if quiz.status == "published":
+        return jsonify({
+            "error": "Cannot edit questions after quiz is published"
+        }), 403
+
+    data = request.get_json()
+
+    question.question_text = data.get(
+        "question_text",
+        question.question_text
+    )
+    question.choices = data.get("choices", question.choices)
+    question.correct_answer = data.get(
+        "correct_answer",
+        question.correct_answer
+    )
+
+    db.session.commit()
+
+    return jsonify({"message": "Question updated"})
+
+@quiz_questions_bp.route("/<int:question_id>/delete_question", methods=["DELETE"])
+@instructor_required
+def delete_question(question_id):
+
+    identity = json.loads(get_jwt_identity())
+    instructor_id = int(identity["id"])
+
+    question = QuizQuestion.query.get_or_404(question_id)
+    quiz = Quiz.query.get_or_404(question.quiz_id)
+    course = Course.query.get_or_404(quiz.course_id)
+
+    if course.instructor_id != instructor_id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    if quiz.status == "published":
+        return jsonify({
+            "error": "Cannot delete questions from a published quiz"
+        }), 403
+
+    db.session.delete(question)
+    db.session.commit()
+
+    return jsonify({"message": "Question deleted"})
+
+@quiz_questions_bp.route("/<int:quiz_id>/add_question", methods=["POST"])
+@instructor_required
+def add_question(quiz_id):
+
+    identity = json.loads(get_jwt_identity())
+    instructor_id = int(identity["id"])
+
+    quiz = Quiz.query.get_or_404(quiz_id)
+    course = Course.query.get_or_404(quiz.course_id)
+
+    if course.instructor_id != instructor_id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    if quiz.status == "published":
+        return jsonify({
+            "error": "Cannot add questions to a published quiz"
+        }), 403
+
+    data = request.get_json()
+
+    question_text = data.get("question_text")
+    material_id = data.get("material_id")
+    correct_answer = data.get("correct_answer")
+    choices = data.get("choices")
+
+    if not question_text or not correct_answer or not material_id:
+        return jsonify({
+            "error": "question_text, material_id, and correct_answer required"
+        }), 400
+
+    material = CourseMaterial.query.get(material_id)
+    if not material or material.course_id != quiz.course_id:
+        return jsonify({"error": "Invalid material_id"}), 400
+
+    question = QuizQuestion(
+        quiz_id=quiz.id,
+        material_id=material_id,
+        question_text=question_text,
+        choices=choices,
+        correct_answer=correct_answer
+    )
+
+    db.session.add(question)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Question added",
+        "question_id": question.id
+    }), 201
