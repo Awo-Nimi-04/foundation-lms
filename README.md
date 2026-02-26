@@ -1,3 +1,13 @@
+# Project Description
+    Students often struggle to understand course
+    material, identify their weaknesses, and determine how best to allocate their study time.
+    Instructors, meanwhile, face challenges in identifying class-wide learning gaps and creating
+    engaging instructional content efficiently.
+    Recent advances in artificial intelligence present an opportunity to enhance traditional LMS
+    platforms by making them adaptive, personalized, and more supportive of both students and
+    instructors. The goal of this project is to design and implement an AI-powered learning
+    management system that actively supports learning through intelligent assistance, personalized
+    learning paths, and instructor-focused AI tools.
 # Setup Instructions
 1. Clone the repository
     git clone <your-repo-url>
