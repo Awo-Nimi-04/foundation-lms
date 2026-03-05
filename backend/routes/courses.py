@@ -1,5 +1,7 @@
 from extensions import db
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required
+from models.assignment import Assignment
 from models.user import User
 from models.course import Course
 from models.course_material import CourseMaterial
@@ -46,3 +48,20 @@ def upload_material(course_id):
     db.session.add(material)
     db.session.commit()
     return jsonify({"message": "Material uploaded", "material_id": material.id})
+
+@courses_bp.route("/<int:course_id>/assignments", methods=["GET"])
+@jwt_required()
+def get_course_assignments(course_id):
+
+    assignments = Assignment.query.filter_by(course_id = course_id).all()
+
+    return jsonify([
+        {
+            "id": a.id,
+            "title": a.title,
+            "description": a.description,
+            "due_date": a.due_date,
+            "max_score": a.max_score
+        } 
+        for a in assignments
+    ]) 

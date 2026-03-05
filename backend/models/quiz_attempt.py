@@ -35,4 +35,6 @@ class QuestionAttempt(db.Model):
     question_id = db.Column(db.Integer, db.ForeignKey("quiz_question.id"), nullable=False)
     submitted_answer = db.Column(db.Text)
     score = db.Column(db.Float)
+    auto_graded = db.Column(db.Boolean, default=True)
+    manually_graded = db.Column(db.Boolean, default=False)
     date_taken = db.Column(db.DateTime, default=datetime.now())

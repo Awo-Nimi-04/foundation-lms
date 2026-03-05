@@ -6,9 +6,11 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.user import User
+from models.course import Course
 from models.course_material import CourseMaterial
 from models.quiz_attempt import QuizAttempt, QuestionAttempt
 from models.quiz import Quiz, QuizQuestion
+from utils.decorators import instructor_required
 
 quiz_attempts_bp = Blueprint("quiz_attempts", __name__, url_prefix="/quiz_attempts")
 
@@ -272,3 +274,66 @@ def time_remaining(attempt_id):
 
     return jsonify({"time_remaining_minutes": round(remaining, 2)})
 
+@quiz_attempts_bp.route("/<int:attempt_id>/grade", methods=["POST"])
+@instructor_required
+def grade_quiz_attempt(attempt_id):
+
+    identity = json.loads(get_jwt_identity())
+    instructor_id = int(identity["id"])
+
+    if identity["role"] != "instructor":
+        return jsonify({"error": "Instructors only"}), 403
+
+    attempt = QuizAttempt.query.get_or_404(attempt_id)
+    quiz = Quiz.query.get_or_404(attempt.quiz_id)
+    
+    if quiz.instructor_id != instructor_id:
+        return jsonify({"error": "Unauthorized"}), 403  
+    
+    data = request.get_json()
+    question_updates = data.get("questions", [])
+
+    question_attempts = QuestionAttempt.query.filter_by(attempt_id = attempt_id).all()
+    question_lookup = {qa.question_id: qa for qa in question_attempts}
+
+    total_score = 0
+    max_total = 0
+
+    for q_update in question_updates:
+        q_id = q_update.get("question_id")
+        score = float(q_update.get("score", 0))
+        feedback = q_update.get("feedback", "")
+
+        qa = question_lookup.get(q_id)
+        if not qa:
+            continue
+
+        qa.score = score
+        qa.instructor_feedback = feedback
+        qa.manually_graded = True
+        qa.auto_graded = False
+        qa.graded_at = datetime.now()
+
+        total_score += score
+        max_total += qa.max_score or 1.0
+
+    attempt.score = total_score / max_total if max_total else 0
+    attempt.status = "graded"
+    attempt.submitted_at = attempt.submitted_at or datetime.now()
+
+    db.session.commit()
+
+    return jsonify({
+        "attempt_id": attempt.id,
+        "student_id": attempt.student_id,
+        "quiz_id": attempt.quiz_id,
+        "status": attempt.status,
+        "score": round(attempt.score, 2),
+        "graded_questions": [
+            {
+                "question_id": qa.question_id,
+                "score": qa.score,
+                "feedback": qa.instructor_feedback
+            } for qa in question_attempts
+        ]
+    })

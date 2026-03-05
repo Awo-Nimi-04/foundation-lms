@@ -8,6 +8,7 @@ from models.student_progress import  StudentProgress
 from models.quiz import QuizQuestion
 from models.quiz_attempt import QuizAttempt
 from utils.decorators import instructor_required
+from routes.assignments import assignments_bp
 from routes.auth import auth_bp
 from routes.courses import courses_bp
 from routes.study import study_bp
@@ -38,6 +39,7 @@ app.register_blueprint(study_bp)
 app.register_blueprint(quizzes_bp)
 app.register_blueprint(quiz_questions_bp)
 app.register_blueprint(quiz_attempts_bp)
+app.register_blueprint(assignments_bp)
 
 @app.route("/")
 def home():
