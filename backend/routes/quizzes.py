@@ -23,7 +23,7 @@ gemini_client =  OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
     )
 
-@quizzes_bp.route("/courses/<int:course_id>/quizzes", methods=["POST"])
+@quizzes_bp.route("/courses/<int:course_id>/create_quiz", methods=["POST"])
 @instructor_required
 def create_quiz(course_id):
     identity = json.loads(get_jwt_identity())
@@ -55,7 +55,7 @@ def create_quiz(course_id):
     quiz = Quiz(
         title=title,
         course_id=course_id,
-        instructor_id=instructor_id,
+        instructor_id=course.instructor_id,
         due_date=due_date,
         time_limit_minutes=time_limit,
     )
@@ -89,6 +89,8 @@ def generate_quiz_questions(quiz_id):
     if not quiz:
         return jsonify({"error": "Quiz not found"}), 404
 
+    ## check if quiz already has questions
+    ## error should be ai generation only for blank/new quizzes
     course = Course.query.get(quiz.course_id)
     if course.instructor_id != instructor_id:
         return jsonify({"error": "Unauthorized"}), 403
@@ -117,23 +119,35 @@ def generate_quiz_questions(quiz_id):
                 "You are an expert instructor generating quiz data for a software system.\n"
                 "Return ONLY valid JSON.\n"
                 "Do NOT include markdown, explanations, or text outside JSON.\n"
-                "Output must be a JSON array.\n"
-                "Each object must contain:\n"
+                "Output must be a JSON array.\n\n"
+
+                "Each object MUST contain:\n"
                 "- question_text\n"
-                "- choices (optional)\n"
+                "- question_type (must be either 'short_answer' or 'multiple_choice')\n"
                 "- correct_answer\n"
-                "- material_id (must match provided source_name exactly)\n"
-                )
+                "- material_id (must match the provided source_name exactly)\n\n"
+
+                "If question_type is 'multiple_choice':\n"
+                "- Include 'choices' as an array of answer options\n"
+                "- The correct_answer must match one of the choices\n\n"
+
+                "If question_type is 'short_answer':\n"
+                "- Do NOT include choices\n"
+            )
         },
         {
             "role": "user",
             "content": (
                 f"Materials:\n{formatted_materials}\n\n"
-                f"Create {num_questions} quiz questions in JSON format each with:\n"
-                f"{formatted_materials}"
-                "- question_text\n- choices (if multiple choice)\n- correct_answer\n- material_id\n"
-                )
-         }
+                f"Generate {num_questions} quiz questions using the materials above.\n\n"
+                "Each question must include:\n"
+                "- question_text\n"
+                "- question_type\n"
+                "- correct_answer\n"
+                "- material_id\n"
+                "- choices (only if question_type is multiple_choice)\n"
+            )
+        }
     ]
 
     try:
@@ -269,8 +283,8 @@ def publish_quiz(quiz_id):
 @jwt_required()
 def get_quiz(quiz_id):
 
-    identity = get_jwt_identity()
-    user_id = identity["id"]
+    identity = json.loads(get_jwt_identity())
+    user_id = int(identity["id"])
     role = identity["role"]
 
     quiz = Quiz.query.get_or_404(quiz_id)
@@ -304,5 +318,40 @@ def get_quiz(quiz_id):
         "course_id": quiz.course_id,
         "due_date": quiz.due_date.isoformat() if quiz.due_date else None,
         "status": quiz.status,
-        "questions": serialized_questions
+        "questions": serialized_questions,
+        "time_limit": quiz.time_limit_minutes,
     })
+
+@quizzes_bp.route("/course/<int:course_id>", methods=["GET"])
+@jwt_required()
+def get_quizzes_for_course(course_id):
+    identity = json.loads(get_jwt_identity())
+    id = int(identity["id"])
+    role = identity["role"]
+
+    quizzes = Quiz.query.filter_by(course_id=course_id).all()
+
+    if not quizzes:
+        return jsonify({"message": []}), 200
+
+    quiz_list = []
+
+    for quiz in quizzes:
+        student_quiz_attempts = []
+        if role == "student" and quiz.status != "published":
+            continue
+        if role == "student":
+            student_quiz_attempts.extend(QuizAttempt.query.filter_by(
+                student_id = id,
+                quiz_id = quiz.id
+                ).all())
+        quiz_list.append({
+            "id": quiz.id,
+            "title": quiz.title,
+            "date_created": quiz.date_created,
+            "instructor_id": quiz.instructor_id,
+            "quiz_attempts": student_quiz_attempts,
+            "status": quiz.status,
+        })
+
+    return jsonify({"message": quiz_list}), 200

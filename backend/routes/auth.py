@@ -29,9 +29,10 @@ def register():
     
     user = User(email=email, role=role)
     user.set_password(password)
+    access_token = create_access_token(identity=json.dumps({"id": str(user.id), "role": user.role}))
     db.session.add(user)
     db.session.commit()
-    return jsonify({"message": "User registered successfully", "user_id": user.id})
+    return jsonify({"message": "User registered successfully", "user_id": user.id, "role": user.role, "access_token": access_token})
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
@@ -44,4 +45,4 @@ def login():
         return jsonify({"error": "Invalid email or password"}), 401
     
     access_token = create_access_token(identity=json.dumps({"id": str(user.id), "role": user.role}))
-    return jsonify({"access_token": access_token})
+    return jsonify({"access_token": access_token, "role": user.role})

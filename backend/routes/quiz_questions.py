@@ -2,13 +2,45 @@ import json
 from extensions import db
 from models.quiz import Quiz
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from utils.decorators import instructor_required
 from models.quiz import QuizQuestion
 from models.course import Course
 from models.course_material import CourseMaterial
 
 quiz_questions_bp = Blueprint("quiz_questions", __name__, url_prefix="/questions")
+
+@quiz_questions_bp.route("/<int:quiz_id>", methods=["GET"])
+@jwt_required()
+def get_quiz_questions(quiz_id):
+
+    quiz = Quiz.query.get(quiz_id)
+
+    if not quiz:
+        return jsonify({"error": "Quiz not found"}), 404
+    
+
+    questions = (
+        QuizQuestion.query
+        .filter_by(quiz_id=quiz_id)
+        .order_by(QuizQuestion.id)
+        .all()
+    )
+
+    question_list = []
+
+    for q in questions:
+        question_list.append({
+            "id": q.id,
+            "quiz_id": q.quiz_id,
+            "question_text": q.question_text,
+            "question_type": q.question_type,
+            "correct_answer": q.correct_answer,
+            "material_id": q.material_id,
+            "choices": q.choices
+        })
+
+    return jsonify({"message": question_list}), 200
 
 @quiz_questions_bp.route("/<int:question_id>/edit_question", methods=["PATCH"])
 @instructor_required

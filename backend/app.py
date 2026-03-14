@@ -2,6 +2,7 @@ import os
 from openai import OpenAI
 from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 from extensions import db
 from models.course_material import CourseMaterial 
 from models.student_progress import  StudentProgress
@@ -17,6 +18,13 @@ from routes.quiz_questions import quiz_questions_bp
 from routes.quiz_attempts import quiz_attempts_bp
 
 app = Flask(__name__)
+CORS(
+    app,
+    resources={r"/*": {"origins": "http://localhost:5173"}},
+    supports_credentials=True, 
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_TOKEN")
 jwt = JWTManager(app)
 

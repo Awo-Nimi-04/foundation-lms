@@ -92,6 +92,25 @@ def submit_attempt(attempt_id):
         "score": round(final_score, 2)
     })
 
+@quiz_attempts_bp.route("/<int:quiz_id>", methods=["GET"])
+@jwt_required()
+def get_attempts_for_quiz(quiz_id):
+    identity = json.loads(get_jwt_identity())
+    id = int(identity["id"])
+
+    quiz_attempts = QuizAttempt.query.filter_by(
+        student_id = id,
+        quiz_id = quiz_id,
+        status = "graded",
+    ).all()
+
+    quiz_attempt_list = []
+
+    for quiz_attempt in quiz_attempts:
+        quiz_attempt_list.append({
+            "id": quiz_attempt.id,
+        })
+
 @quiz_attempts_bp.route("/<int:attempt_id>/quiz_attempt_analytics")
 @jwt_required()
 def quiz_attempt_analytics(attempt_id):
@@ -180,7 +199,7 @@ def instructor_quiz_analytics(quiz_id):
         return jsonify({"error": "Unauthorized"}), 403
 
     # Fetch all attempts for this quiz
-    attempts = QuizAttempt.query.filter_by(quiz_id=quiz_id).all()
+    attempts = QuizAttempt.query.filter_by(quiz_id=quiz_id, status = "graded").all()
     if not attempts:
         return jsonify({"error": "No attempts found"}), 404
 
@@ -250,6 +269,7 @@ def instructor_quiz_analytics(quiz_id):
 
     return jsonify({
         "quiz_id": quiz.id,
+        "quiz_max_score": quiz.id,
         "quiz_title": quiz.title,
         "total_attempts": total_attempts,
         "average_score": avg_score,
@@ -274,7 +294,7 @@ def time_remaining(attempt_id):
 
     return jsonify({"time_remaining_minutes": round(remaining, 2)})
 
-@quiz_attempts_bp.route("/<int:attempt_id>/grade", methods=["POST"])
+@quiz_attempts_bp.route("/<int:attempt_id>/grade", methods=["PATCH"])
 @instructor_required
 def grade_quiz_attempt(attempt_id):
 
@@ -302,14 +322,14 @@ def grade_quiz_attempt(attempt_id):
     for q_update in question_updates:
         q_id = q_update.get("question_id")
         score = float(q_update.get("score", 0))
-        feedback = q_update.get("feedback", "")
+        # feedback = q_update.get("feedback", "")
 
         qa = question_lookup.get(q_id)
         if not qa:
             continue
 
         qa.score = score
-        qa.instructor_feedback = feedback
+        # qa.instructor_feedback = feedback
         qa.manually_graded = True
         qa.auto_graded = False
         qa.graded_at = datetime.now()
@@ -333,7 +353,65 @@ def grade_quiz_attempt(attempt_id):
             {
                 "question_id": qa.question_id,
                 "score": qa.score,
-                "feedback": qa.instructor_feedback
+                # "feedback": qa.instructor_feedback
             } for qa in question_attempts
         ]
+    })
+
+@quiz_attempts_bp.route("/quiz/<int:quiz_id>/student/<int:student_id>/responses", methods=["GET"])
+@instructor_required
+def get_student_quiz_responses(quiz_id, student_id):
+
+    identity = json.loads(get_jwt_identity())
+    instructor_id = int(identity["id"])
+
+    quiz = Quiz.query.get_or_404(quiz_id)
+
+    # Ensure instructor owns this quiz
+    if quiz.instructor_id != instructor_id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    # Get latest submitted attempt
+    attempt = (
+        QuizAttempt.query
+        .filter_by(quiz_id=quiz_id, student_id=student_id, status="submitted")
+        .order_by(QuizAttempt.submitted_at.desc())
+        .first()
+    )
+
+    if not attempt:
+        return jsonify({"error": "No submitted attempt found"}), 404
+
+    # Fetch all questions
+    questions = QuizQuestion.query.filter_by(quiz_id=quiz_id).all()
+
+    # Fetch student's answers for this attempt
+    question_attempts = QuestionAttempt.query.filter_by(
+        attempt_id=attempt.id
+    ).all()
+
+    attempt_lookup = {qa.question_id: qa for qa in question_attempts}
+
+    responses = []
+
+    for q in questions:
+        qa = attempt_lookup.get(q.id)
+
+        responses.append({
+            "question_id": q.id,
+            "question_text": q.question_text,
+            "question_type": q.question_type,
+            "correct_answer": q.correct_answer,
+            "submitted_answer": qa.submitted_answer if qa else None,
+            "score": qa.score if qa else None
+        })
+
+    return jsonify({
+        "quiz_id": quiz_id,
+        "quiz_total_score": quiz.max_score,
+        "quiz_title": quiz.title,
+        "student_id": student_id,
+        "attempt_id": attempt.id,
+        "submitted_at": attempt.submitted_at,
+        "responses": responses
     })

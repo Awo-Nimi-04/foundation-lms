@@ -4,13 +4,25 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 from werkzeug.utils import secure_filename
-
 from extensions import db
 from models.assignment import Assignment, AssignmentSubmission
 from models.course import Course
+from models.user import User
 from utils.decorators import instructor_required
 
 assignments_bp = Blueprint("assignments", __name__, url_prefix="/assignments")
+
+@assignments_bp.route("", methods=["GET"])
+@jwt_required()
+def view_all_my_assignments():
+    return jsonify({"message": [
+        {
+            "id": 1,
+            "title": "Endpoint in construction",
+            "due_date": "soon"
+            }
+        ]
+    })
 
 @assignments_bp.route("", methods=["POST"])
 @instructor_required
@@ -27,9 +39,9 @@ def create_assignment():
         title = data["title"],
         description = data.get("description"),
         due_date = datetime.fromisoformat(data["due_date"]) if data.get("due_date") else None,
-        max_score = data.get("max_score", 100),
-        allow_text_submission = data.get("allow_text_submission", True),
-        allow_file_submission = data.get("allow_file_submission", True)
+        max_score = data.get("max_score") if data.get("max_score") else 100,
+        allow_text_submission = data.get("allow_text_submission") if data.get("allow_text_submission") else True,
+        allow_file_submission = data.get("allow_file_submission") if data.get("allow_file_submission") else True,
     )
 
     db.session.add(assignment)
@@ -190,6 +202,7 @@ def view_student_submissions(assignment_id, student_id):
     return jsonify([
         {
             "submission_id": s.id,
+            "student_id": student_id,
             "version": s.version,
             "submission_text": s.submission_text,
             "submission_file": s.submission_file,
@@ -200,6 +213,28 @@ def view_student_submissions(assignment_id, student_id):
         }
         for s in submissions
     ])
-    
 
+@assignments_bp.route("/course/<int:course_id>", methods=["GET"])
+@jwt_required()
+def get_course_assignments(course_id):
 
+    # Optional: check if course exists
+    course = Course.query.get(course_id)
+    if not course:
+        return jsonify({"error": "Course not found"}), 404
+
+    # Fetch assignments by this instructor for the given course
+    assignments = Assignment.query.filter_by(
+        course_id=course_id
+    ).all()
+
+    assignments_list = []
+    for a in assignments:
+        assignments_list.append({
+            "id": a.id,
+            "title": a.title,
+            "description": a.description,
+            "due_date": a.due_date.isoformat() if a.due_date else None,
+        })
+
+    return jsonify({"message": assignments_list})

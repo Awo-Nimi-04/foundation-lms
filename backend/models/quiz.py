@@ -7,6 +7,7 @@ class Quiz(db.Model):
     instructor_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     title = db.Column(db.String(255), nullable=False)
     is_published = db.Column(db.Boolean, default=False)
+    max_score = db.Column(db.Float, default=10.0)
     created_with_ai = db.Column(db.Boolean, default=False)
     status = db.Column(db.String(20), default="draft")
     date_created = db.Column(db.DateTime, default=datetime.now())
