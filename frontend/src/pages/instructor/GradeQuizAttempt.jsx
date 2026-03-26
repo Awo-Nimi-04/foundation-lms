@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import api from "../../api/api";
 import { useParams } from "react-router-dom";
 import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import Input from "../../components/ui/Input";
+import InnerCard from "../../components/ui/InnerCard";
+import Label from "../../components/ui/Label";
 
 export default function GradeQuizAttempt() {
   const { quizId } = useParams();
@@ -18,7 +22,6 @@ export default function GradeQuizAttempt() {
       const res = await api.get(
         `/quiz_attempts/quiz/${quizId}/student/${studentIndex}/responses`,
       );
-      console.log(res.data)
       setAttempt(res.data);
       const ininitalScores = res.data.responses.map((response) => ({
         question_id: response.question_id,
@@ -72,70 +75,85 @@ export default function GradeQuizAttempt() {
     return <p>There is no attempt for this user.</p>;
 
   return (
-    <div>
-      <h1>{attempt.quiz_title}</h1>
-      {console.log(studentIndex)}
-      <div className="flex">
-        <p>Student: {attempt.student_id}</p>
-        <p>
-          Total Score: {Number(attempt.attempt_score) * Number(attempt.quiz_total_score)}/
-          {attempt.quiz_total_score}
-        </p>
-        {/* <p>Attempt: {attempt.attempt_id}</p> */}
-      </div>
-      {attempt.responses?.map((response) => (
-        <div key={response.question_id}>
-          <h2>{response.question_text}</h2>
-          <p>Student Response: {response.submitted_answer}</p>
-          <p>Correct Response: {response.correct_answer}</p>
-          <input
-            type="number"
-            min={0}
-            value={
-              scores.find((q) => q.question_id === response.question_id)
-                ?.score ??
-              response?.score ??
-              ""
-            }
-            onChange={(e) => {
-              handleScoreChange(e.target.value, response.question_id);
-            }}
-          />
+    <div className="flex flex-col justify-center items-center min-h-screen">
+      <Card
+        title={`Grade ${attempt.quiz_title}`}
+        footer={
+          <div className="flex justify-center p-2 space-x-2">
+            <Button
+              onClick={handlePreviousStudent}
+              disabled={studentIndex === 2}
+            >
+              Prev
+            </Button>
+            <Button onClick={handleGradeQuiz}>Grade</Button>
+            <Button onClick={handleNextStudent} disabled={studentIndex === 10}>
+              Next
+            </Button>
+          </div>
+        }
+        customStyles={"text-center py-4 w-[80%] mx-auto"}
+      >
+        {console.log(studentIndex)}
+        <div className="flex justify-between px-6">
+          <div className="flex space-x-2 items-center">
+            <p className="text-lg font-semibold text-stone-200">Student: </p>
+            <Label color="gray"> {attempt.student_id}</Label>
+          </div>
+          <div className="flex space-x-2 items-center">
+            <p className="text-lg font-semibold text-stone-200">Score: </p>
+            <Label color="orange" size="text-lg">
+              {Number(attempt.attempt_score) * Number(attempt.quiz_total_score)}{" "}
+              / {attempt.quiz_total_score}
+            </Label>
+          </div>
+          {/* <p>Attempt: {attempt.attempt_id}</p> */}
         </div>
-      ))}
-      <div>
-        <Button onClick={handlePreviousStudent} disabled={studentIndex === 2}>
-          Previous
-        </Button>
-        <Button onClick={handleGradeQuiz}>Grade Quiz</Button>
-        <Button onClick={handleNextStudent} disabled={studentIndex === 10}>
-          Next
-        </Button>
-      </div>
+        {attempt.responses?.map((response, idx) => (
+          <InnerCard
+            title={`Question ${idx + 1}`}
+            key={response.question_id}
+            customStyles={"my-4"}
+          >
+            <h2 className="font-semibold text-lg">{response.question_text}</h2>
+            <div className="flex w-full items-center">
+              <p className="mr-auto font-medium w-40">Student Response</p>
+
+              <div className="ml-auto max-w-xs">
+                <p className="line-clamp-1 font-medium text-yellow-300">
+                  {response.submitted_answer}
+                </p>
+              </div>
+            </div>
+            <div className="mr-auto flex w-full items-center">
+              <p className="font-medium w-40">Correct Response</p>
+
+              <div className="ml-auto max-w-xs">
+                <p className="line-clamp-1 font-medium text-green-300">
+                  {response.correct_answer}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-center items-end">
+              <Input
+                label={"Score"}
+                type={"number"}
+                value={
+                  scores.find((q) => q.question_id === response.question_id)
+                    ?.score ??
+                  response?.score ??
+                  ""
+                }
+                onChange={(e) => {
+                  handleScoreChange(e.target.value, response.question_id);
+                }}
+                customStyles={"w-20 text-center"}
+              />
+              <p className="text-lg ml-2">/ {attempt.quiz_total_score}</p>
+            </div>
+          </InnerCard>
+        ))}
+      </Card>
     </div>
   );
 }
-
-// <input
-//   type="number"
-//   placeholder="Score"
-//   value={score}
-//   onChange={(e) => setScore(e.target.value)}
-// />
-
-// RESPONSES
-//     "question_id": q.id,
-//     "question_text": q.question_text,
-//     "question_type": q.question_type,
-//     "correct_answer": q.correct_answer,
-//     "submitted_answer": qa.submitted_answer if qa else None,
-//     "score": qa.score if qa else None
-
-// ATTEMPT
-// "quiz_id": quiz_id,
-// "quiz_total_score": quiz.max_score,
-// "quiz_title": quiz.title,
-// "student_id": student_id,
-// "attempt_id": attempt.id,
-// "submitted_at": attempt.submitted_at,
-// "responses": responses

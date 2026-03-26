@@ -58,22 +58,28 @@ export default function QuizAnalytics() {
             />
           </InnerCard>
           <InnerCard title={"Question Stats"} customStyles={"w-[70%]"}>
-            <div className="flex w-full justify-between items-center">
+            <div className="flex w-full items-center">
               <p className="font-semibold w-20">Easiest</p>
-              <p className="ml-auto line-clamp-1 w-80 font-medium text-green-300">
-                {performance.easiest_question.question_text}
-              </p>
+
+              <div className="ml-auto max-w-xs">
+                <p className="line-clamp-1 font-medium text-green-300">
+                  {performance.easiest_question.question_text}
+                </p>
+              </div>
             </div>
             <StatItem
               color={"green"}
               stat={"Easiest Question Accuracy (%)"}
               value={`${performance.easiest_question.accuracy_percent}`}
             />
-            <div className="flex w-full justify-between items-center">
+            <div className="flex w-full items-center">
               <p className="font-semibold w-20">Hardest</p>
-              <p className="ml-auto line-clamp-1 text-red-300 font-medium w-80">
-                {performance.hardest_question.question_text}
-              </p>
+
+              <div className="ml-auto max-w-xs">
+                <p className="line-clamp-1 font-medium text-red-300">
+                  {performance.hardest_question.question_text}
+                </p>
+              </div>
             </div>
             <StatItem
               color={"red"}

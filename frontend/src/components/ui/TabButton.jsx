@@ -10,7 +10,7 @@ export default function TabButton({ options, selectedOption, onChange }) {
             onClick={() => onChange(option)}
             className={`px-4 py-2 rounded-md text-sm transition ${
               isActive
-                ? "bg-blue-500 text-white"
+                ? "bg-indigo-500 text-white"
                 : "text-stone-300 hover:bg-stone-800"
             }`}
           >

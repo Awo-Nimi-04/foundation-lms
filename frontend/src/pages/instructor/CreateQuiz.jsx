@@ -122,6 +122,7 @@ export default function CreateQuiz() {
             type={"number"}
             onChange={(e) => setTimeLimit(e.target.value)}
             placeholder={"Time limit"}
+            customStyles={""}
           />
 
           <Input

@@ -1,4 +1,4 @@
-export default function Label({ children, color = "blue" }) {
+export default function Label({ children, color = "blue", size = "text-sm" }) {
   const colorStyles = {
     blue: "text-blue-400 bg-blue-500/10",
     green: "text-green-400 bg-green-500/10",
@@ -11,7 +11,7 @@ export default function Label({ children, color = "blue" }) {
 
   return (
     <span
-      className={`px-2 py-1 text-sm font-semibold rounded-md ${colorStyles[color]}`}
+      className={`px-2 py-1 ${size} font-semibold rounded-md ${colorStyles[color]}`}
     >
       {children}
     </span>

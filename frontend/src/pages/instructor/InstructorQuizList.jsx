@@ -50,7 +50,7 @@ export default function InstructorQuizList() {
       {quizzes.map((quiz) => {
         if (quiz.status === quizStatusFilter.toLowerCase()) {
           return (
-            <ListCard key={quiz.id} title={quiz.title} customStyles={"w-80"}>
+            <ListCard key={quiz.id} title={quiz.title} customStyles={"w-[80%]"}>
               <div className="">
                 {quizStatusFilter === "Draft" && (
                   <Button
@@ -93,6 +93,7 @@ export default function InstructorQuizList() {
         onClick={() =>
           navigate(`/instructor/courses/${courseId}/quizzes/create`)
         }
+        customStyles={"mt-4"}
       >
         Create Quiz
       </Button>

@@ -98,8 +98,8 @@ export default function CreateAssignment() {
           </div>
 
           {error && <p className="">{error}</p>}
-          <div className="text-center p-2">
-            <Button type="submit" variant="primary" disabled={loading}>
+          <div className="text-center my-3">
+            <Button type="submit" variant="primary" customStyles={"w-full"} disabled={loading}>
               {loading ? "Creating..." : "Create"}
             </Button>
           </div>
