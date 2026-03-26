@@ -41,7 +41,7 @@ export default function InstructorQuizList() {
         <PageHeading>Course Quizzes</PageHeading>
       </div>
 
-      {quizzes.length === 0 && <p>No quizzes created yet.</p>}
+      {quizzes.length === 0 && <p className="text-stone-300 mt-4">No quizzes created yet.</p>}
       <TabButton
         options={["Published", "Draft"]}
         selectedOption={quizStatusFilter}

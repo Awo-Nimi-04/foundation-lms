@@ -55,7 +55,7 @@ export default function CreateAssignment() {
   };
   return (
     <div className="text-center flex flex-col justify-center min-h-screen space-y-4">
-      <PageHeading>Create Assignment</PageHeading>
+      <PageHeading>Create An Assignment</PageHeading>
 
       <Card title="New Assignment" customStyles={"w-100 mx-auto"}>
         <form

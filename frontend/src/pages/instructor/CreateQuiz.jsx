@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import api from "../../api/api";
+import PageHeading from "../../components/ui/PageHeading";
+import Card from "../../components/ui/Card";
+import Input from "../../components/ui/Input";
 
 export default function CreateQuiz() {
   const navigate = useNavigate();
@@ -69,70 +72,74 @@ export default function CreateQuiz() {
   };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit} className="">
-        <div className="">
-          <label>Title</label>
-          <input
-            type="text"
+    <div className="text-center flex flex-col justify-center min-h-screen space-y-4">
+      <PageHeading>Create A Quiz</PageHeading>
+      <Card
+        customStyles={"w-100 mx-auto"}
+        footer={
+          <>
+            {isCreated && (
+              <div className="flex">
+                <Button variant="primary" onClick={generateAIQuizQuestions}>
+                  Generate Questions with AI
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    navigate(`/instructor/quizzes/${quizId}/quiz_editor`);
+                  }}
+                >
+                  Create Questions Manually
+                </Button>
+              </div>
+            )}
+          </>
+        }
+      >
+        <form
+          onSubmit={handleSubmit}
+          className="p-4 text-left flex flex-col space-y-3"
+        >
+          <Input
+            label={"Title"}
+            type={"text"}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Assignment title"
+            placeholder={"Assignment title"}
           />
-        </div>
 
-        <div className="">
-          <label>Number of Questions</label>
-          <input
+          <Input
+            label={"Number of Questions (AI Generation Only)"}
             value={questionCount || ""}
-            type="number"
+            type={"number"}
             onChange={(e) => setQuestionCount(e.target.value)}
-            placeholder="Set the number of questions. (For AI question generation only)"
+            placeholder={"Set the number of questions"}
           />
-        </div>
 
-        <div className="">
-          <label>Time Limit</label>
-          <input
+          <Input
+            label={"Time Limit (minutes)"}
             value={timeLimit}
-            type="number"
+            type={"number"}
             onChange={(e) => setTimeLimit(e.target.value)}
-            placeholder="Time limit (minutes)"
+            placeholder={"Time limit"}
           />
-        </div>
 
-        <div className="">
-          <label>Due Date</label>
-          <input
+          <Input
+            label={"Due Date"}
             type="datetime-local"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
-        </div>
 
-        {error && <p className="">{error}</p>}
+          {error && <p className="">{error}</p>}
 
-        {!isCreated && (
-          <Button type="submit" variant="primary" disabled={loading}>
-            {loading ? "Creating..." : "Create Quiz"}
-          </Button>
-        )}
-      </form>
-      {isCreated && (
-        <div className="flex">
-          <Button variant="primary" onClick={generateAIQuizQuestions}>
-            Generate Questions with AI
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => {
-              navigate(`/instructor/quizzes/${quizId}/quiz_editor`);
-            }}
-          >
-            Create Questions Manually
-          </Button>
-        </div>
-      )}
+          {!isCreated && (
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? "Creating..." : "Create"}
+            </Button>
+          )}
+        </form>
+      </Card>
     </div>
   );
 }

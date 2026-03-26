@@ -29,12 +29,12 @@ export default function QuizAnalytics() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
       <Card
-        title={performance.quiz_title}
-        customStyles={"py-4"}
+        title={`${performance.quiz_title} Analytics`}
+        customStyles={"py-4 w-[70%]"}
         headerStyles={"text-center"}
       >
         <div className="flex flex-col items-center p-3 space-y-3">
-          <InnerCard title={"Performance Stats"} customStyles={"w-[50%]"}>
+          <InnerCard title={"Performance Stats"} customStyles={"w-[70%]"}>
             <StatItem
               color={"yellow"}
               stat={"Average Score"}
@@ -57,19 +57,23 @@ export default function QuizAnalytics() {
               } / ${Number(performance.quiz_max_score)}`}
             />
           </InnerCard>
-          <InnerCard title={"Question Stats"} customStyles={"w-[50%]"}>
-            <p>
-              <p className="font-medium">Easiest Question:</p>{" "}
-              {performance.easiest_question.question_text}
-            </p>
+          <InnerCard title={"Question Stats"} customStyles={"w-[70%]"}>
+            <div className="flex w-full justify-between items-center">
+              <p className="font-semibold w-20">Easiest</p>
+              <p className="ml-auto line-clamp-1 w-80 font-medium text-green-300">
+                {performance.easiest_question.question_text}
+              </p>
+            </div>
             <StatItem
               color={"green"}
               stat={"Easiest Question Accuracy (%)"}
               value={`${performance.easiest_question.accuracy_percent}`}
             />
             <div className="flex w-full justify-between items-center">
-              <p className="font-medium">Hardest Question</p>
-              <p className="text-right">{performance.hardest_question.question_text}</p>
+              <p className="font-semibold w-20">Hardest</p>
+              <p className="ml-auto line-clamp-1 text-red-300 font-medium w-80">
+                {performance.hardest_question.question_text}
+              </p>
             </div>
             <StatItem
               color={"red"}
@@ -77,7 +81,7 @@ export default function QuizAnalytics() {
               value={`${performance.hardest_question.accuracy_percent}`}
             />
           </InnerCard>
-          <InnerCard title={"Materials Analysis"} customStyles={"w-[50%]"}>
+          <InnerCard title={"Materials Analysis"} customStyles={"w-[70%]"}>
             {performance.material_analysis.map((material) => (
               <>
                 <StatItem

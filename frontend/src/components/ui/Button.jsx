@@ -14,7 +14,7 @@ export default function Button({
     }
   return (
     <button
-      className={`${styleDict[variant]} ${customStyles} shadow-xl text-stone-200 cursor-pointer rounded-lg p-2 `}
+      className={`${styleDict[variant]} ${customStyles} shadow-xl text-stone-200 cursor-pointer rounded-lg p-2 select-none`}
       type={type}
       onClick={onClick}
       disabled={disabled}
