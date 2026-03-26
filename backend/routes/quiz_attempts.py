@@ -92,6 +92,34 @@ def submit_attempt(attempt_id):
         "score": round(final_score, 2)
     })
 
+@quiz_attempts_bp.route("/<int:quiz_id>/student", methods=['GET'])
+@jwt_required()
+def get_student_attempts_for_quiz(quiz_id):
+    identity = json.loads(get_jwt_identity())
+    user_id = int(identity["id"])
+    role = identity["role"]
+
+    if role != "student":
+        return jsonify({
+            "message": "Unauthorized, only for students!"
+        }), 403
+    
+    quiz_attempts = QuizAttempt.query.filter_by(
+        student_id = user_id,
+        quiz_id = quiz_id,
+        status = "graded",
+    ).all()
+
+    quiz_attempts_list = []
+
+    for quiz_attempt in quiz_attempts:
+        quiz_attempts_list.append({
+            "id": quiz_attempt.id,
+        })
+    return jsonify({
+        "quiz_attempts": quiz_attempts_list,
+    })
+
 @quiz_attempts_bp.route("/<int:quiz_id>", methods=["GET"])
 @jwt_required()
 def get_attempts_for_quiz(quiz_id):
@@ -110,6 +138,9 @@ def get_attempts_for_quiz(quiz_id):
         quiz_attempt_list.append({
             "id": quiz_attempt.id,
         })
+    return jsonify({
+        "quiz_attempts": quiz_attempt_list,
+    })
 
 @quiz_attempts_bp.route("/<int:attempt_id>/quiz_attempt_analytics")
 @jwt_required()
@@ -199,7 +230,11 @@ def instructor_quiz_analytics(quiz_id):
         return jsonify({"error": "Unauthorized"}), 403
 
     # Fetch all attempts for this quiz
-    attempts = QuizAttempt.query.filter_by(quiz_id=quiz_id, status = "graded").all()
+    attempts = QuizAttempt.query.filter(
+        QuizAttempt.quiz_id == quiz_id,
+        QuizAttempt.status.in_(["submitted", "graded"])
+    ).all()
+
     if not attempts:
         return jsonify({"error": "No attempts found"}), 404
 
@@ -269,7 +304,7 @@ def instructor_quiz_analytics(quiz_id):
 
     return jsonify({
         "quiz_id": quiz.id,
-        "quiz_max_score": quiz.id,
+        "quiz_max_score": quiz.max_score,
         "quiz_title": quiz.title,
         "total_attempts": total_attempts,
         "average_score": avg_score,
@@ -371,10 +406,13 @@ def get_student_quiz_responses(quiz_id, student_id):
     if quiz.instructor_id != instructor_id:
         return jsonify({"error": "Unauthorized"}), 403
 
-    # Get latest submitted attempt
     attempt = (
         QuizAttempt.query
-        .filter_by(quiz_id=quiz_id, student_id=student_id, status="submitted")
+        .filter(
+            QuizAttempt.quiz_id == quiz_id,
+            QuizAttempt.student_id == student_id,
+            QuizAttempt.status.in_(["submitted", "graded"])
+        )
         .order_by(QuizAttempt.submitted_at.desc())
         .first()
     )
@@ -408,6 +446,7 @@ def get_student_quiz_responses(quiz_id, student_id):
 
     return jsonify({
         "quiz_id": quiz_id,
+        "attempt_score": attempt.score,
         "quiz_total_score": quiz.max_score,
         "quiz_title": quiz.title,
         "student_id": student_id,

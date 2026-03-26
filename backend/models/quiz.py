@@ -22,7 +22,7 @@ class QuizQuestion(db.Model):
     quiz_id = db.Column(db.Integer, db.ForeignKey("quiz.id"), nullable=False)
     material_id = db.Column(db.Integer, db.ForeignKey("course_material.id"), nullable=False)
     question_text = db.Column(db.Text, nullable=False)
-    question_type = db.Column(db.String(50))
+    question_type = db.Column(db.String(50), nullable=False)
     choices = db.Column(db.JSON, nullable=True)
     correct_answer = db.Column(db.Text, nullable=False)
     is_ai_generated = db.Column(db.Boolean, default=False)

@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
+import Textarea from "../../components/ui/Textarea";
+import PageHeading from "../../components/ui/PageHeading";
 export default function CreateAssignment() {
   const navigate = useNavigate();
 
@@ -51,49 +54,55 @@ export default function CreateAssignment() {
     }
   };
   return (
-    <div className="">
-      <h2>Create Assignment</h2>
+    <div className="text-center flex flex-col justify-center min-h-screen space-y-4">
+      <PageHeading>Create Assignment</PageHeading>
 
-      <Card title="New Assignment">
-        <form onSubmit={handleSubmit} className="">
-          <div className="">
-            <label>Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Assignment title"
-            />
-          </div>
+      <Card title="New Assignment" customStyles={"w-100 mx-auto"}>
+        <form
+          onSubmit={handleSubmit}
+          className="p-4 text-left flex flex-col space-y-3"
+        >
+          <Input
+            label={"Title"}
+            type={"text"}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={"Assignment title"}
+          />
 
-          <div className="">
-            <label>Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Instructions or description"
-            />
-          </div>
+          <Textarea
+            label={"Description"}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={"Instructions or description"}
+          />
 
-          <div className="">
-            <label>Due Date</label>
-            <input
-              type="datetime-local"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-          </div>
-
-          <div className="">
-            <label>Reference File (optional)</label>
-            <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+          <Input
+            label={"Due Date"}
+            type={"datetime-local"}
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
+          <div className="flex flex-col space-y-1">
+            <label className="text-sm text-stone-300 font-medium">
+              Reference File (optional)
+            </label>
+            <label className="flex items-center p-2 border border-stone-600 rounded-lg bg-stone-900 cursor-pointer">
+              <span className="text-stone-300">Upload file</span>
+              <input
+                type="file"
+                className="hidden"
+                onChange={(e) => setFile(e.target.files[0])}
+              />
+            </label>
           </div>
 
           {error && <p className="">{error}</p>}
-
-          <Button type="submit" variant="primary" disabled={loading}>
-            {loading ? "Creating..." : "Create Assignment"}
-          </Button>
+          <div className="text-center p-2">
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? "Creating..." : "Create"}
+            </Button>
+          </div>
         </form>
       </Card>
     </div>

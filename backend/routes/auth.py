@@ -3,7 +3,7 @@ from flask import Blueprint
 from flask import request, jsonify
 from extensions import db
 from models.user import User
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from utils.validation import validate_email, validate_password
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -45,4 +45,26 @@ def login():
         return jsonify({"error": "Invalid email or password"}), 401
     
     access_token = create_access_token(identity=json.dumps({"id": str(user.id), "role": user.role}))
-    return jsonify({"access_token": access_token, "role": user.role})
+    return jsonify({
+            "access_token": access_token,
+            "user": {
+                "role": user.role,
+                "id": user.id,
+                "email": user.email,
+            }
+        })
+
+@auth_bp.route("/me", methods=["GET"])
+@jwt_required()
+def get_current_user():
+
+    identity = json.loads(get_jwt_identity())
+    user_id = identity["id"]
+
+    user = User.query.get_or_404(user_id)
+
+    return jsonify({
+        "id": user.id,
+        "email": user.email,
+        "role": user.role
+    })

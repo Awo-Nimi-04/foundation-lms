@@ -15,8 +15,8 @@ export default function QuizAttemptsList() {
 
   const fetchAttempts = async () => {
     try {
-      const res = await api.get(`/quiz_attempts/${quizId}`);
-      setAttempts(res.data);
+      const res = await api.get(`/quiz_attempts/${quizId}/student`);
+      setAttempts(res.data.quiz_attempts);
     } catch (err) {
       console.error(err);
     }
@@ -28,6 +28,7 @@ export default function QuizAttemptsList() {
       const res = await api.get(
         `/quiz_attempts/${attemptId}/quiz_attempt_analytics`,
       );
+      //   console.log(res.data)
       setSelectedAttempt(res.data);
     } catch (err) {
       console.error(err);
@@ -42,11 +43,11 @@ export default function QuizAttemptsList() {
         <div>
           {attempts.map((attempt) => (
             <div className="flex">
-              <p>Attempt {attempt.quiz_attempt_id}</p>
+              {/* <p>Attempt {attempt.id}</p> */}
               <Button
                 variant="secondary"
                 onClick={() => {
-                  getAttemptAnalytics(attempt.quiz_attempt_id);
+                  getAttemptAnalytics(attempt.id);
                 }}
               >
                 View
@@ -65,14 +66,15 @@ export default function QuizAttemptsList() {
           <p>Score: {selectedAttempt.total_score}</p>
           <div>
             <h3>Analysis by Material</h3>
-            {selectedAttempt.analysis_by_material.map((material) => (
-              <div>
+            {selectedAttempt.analysis_per_material.map((material) => (
+              <div key={material.material_id}>
                 <p>Material: {material.material_source_name}</p>
                 <p>Mastery %: {material.mastery_percent}</p>
                 <p>
                   Recommendation: This material is currently a/an{" "}
-                  {material.strength_or_weakness} {material.recommendation}
+                  {material.strength_or_weakness}{" "}
                 </p>
+                <p>{material.recommendation}</p>
               </div>
             ))}
           </div>

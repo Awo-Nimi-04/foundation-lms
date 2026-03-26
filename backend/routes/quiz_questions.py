@@ -37,7 +37,8 @@ def get_quiz_questions(quiz_id):
             "question_type": q.question_type,
             "correct_answer": q.correct_answer,
             "material_id": q.material_id,
-            "choices": q.choices
+            "choices": q.choices,
+            "is_ai_generated": q.is_ai_generated,
         })
 
     return jsonify({"message": question_list}), 200
@@ -68,6 +69,7 @@ def edit_question(question_id):
         "question_text",
         question.question_text
     )
+    question.question_type = data.get("question_type", question.question_type)
     question.choices = data.get("choices", question.choices)
     question.correct_answer = data.get(
         "correct_answer",
@@ -76,7 +78,15 @@ def edit_question(question_id):
 
     db.session.commit()
 
-    return jsonify({"message": "Question updated"})
+    return jsonify({
+        "message": "Question updated",             
+        "id": question.id,
+        "question_text": question.question_text,
+        "question_type": question.question_type,
+        "is_ai_generated": question.is_ai_generated,
+        "choices": question.choices,
+        "correct_answer": question.correct_answer,
+        })
 
 @quiz_questions_bp.route("/<int:question_id>/delete_question", methods=["DELETE"])
 @instructor_required
@@ -125,6 +135,7 @@ def add_question(quiz_id):
     question_text = data.get("question_text")
     material_id = data.get("material_id")
     correct_answer = data.get("correct_answer")
+    question_type = data.get("question_type")
     choices = data.get("choices")
 
     if not question_text or not correct_answer or not material_id:
@@ -140,6 +151,7 @@ def add_question(quiz_id):
         quiz_id=quiz.id,
         material_id=material_id,
         question_text=question_text,
+        question_type=question_type,
         choices=choices,
         correct_answer=correct_answer
     )
@@ -149,5 +161,10 @@ def add_question(quiz_id):
 
     return jsonify({
         "message": "Question added",
-        "question_id": question.id
+        "id": question.id,
+        "question_text": question.question_text,
+        "question_type": question.question_type,
+        "is_ai_generated": question.is_ai_generated,
+        "choices": question.choices,
+        "correct_answer": question.correct_answer,
     }), 201

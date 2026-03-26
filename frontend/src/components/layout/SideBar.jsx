@@ -1,35 +1,49 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useCourse } from "../../context/CoursecONTEXT.JSX";
+
+const navStyle =
+  "text-stone-200 hover:bg-gray-100 hover:text-stone-900 p-2 rounded";
 
 export default function SideBar() {
-  const role = localStorage.getItem("role");
+  const { user } = useAuth();
+  const { currentCourse } = useCourse();
+
+  if (!user || !currentCourse) return null;
 
   return (
-    <div className="">
-      <h3 className="">Foundation</h3>
-      <div className="flex flex-col">
-        {role === "student" && (
+    <div className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-gray-600/50 shadow-xl p-4 z-40">
+      <div className="flex flex-col gap-3">
+        {user.role === "student" && (
           <>
-            <Link to={"/student/assignments"} className="">
+            <Link to="/student/assignments" className={`${navStyle}`}>
               Assignments
             </Link>
-            <Link to={"/student/course/1/quizzes"}>Quizzes</Link>
-          </>
-        )}
-
-        {role === "instructor" && (
-          <>
-            <Link to={"/instructor/course/1/assignments"} className="">
-              Assignments
-            </Link>
-            <Link to={"/instructor/course/1/quizzes"} className="">
+            <Link
+              to={`/student/course/${currentCourse.id}/quizzes`}
+              className={`${navStyle}`}
+            >
               Quizzes
             </Link>
           </>
         )}
 
-        <Link to={"/"} className="">
-          Logout
-        </Link>
+        {user.role === "instructor" && (
+          <>
+            <Link
+              to={`/instructor/course/${currentCourse.id}/assignments`}
+              className={`${navStyle}`}
+            >
+              Assignments
+            </Link>
+            <Link
+              to={`/instructor/course/${currentCourse.id}/quizzes`}
+              className={`${navStyle}`}
+            >
+              Quizzes
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

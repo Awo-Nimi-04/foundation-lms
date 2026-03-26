@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/api";
-import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import PageHeading from "../../components/ui/PageHeading";
+import ListCard from "../../components/ui/ListCard";
+import TabButton from "../../components/ui/TabButton";
 
 export default function InstructorQuizList() {
   const { courseId } = useParams();
@@ -10,7 +12,7 @@ export default function InstructorQuizList() {
 
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [quizStatusFilter, setQuizStatusFilter] = useState("published");
+  const [quizStatusFilter, setQuizStatusFilter] = useState("Published");
 
   useEffect(() => {
     fetchQuizzes();
@@ -34,43 +36,23 @@ export default function InstructorQuizList() {
   if (loading) return <p>Loading quizzes...</p>;
 
   return (
-    <div className="">
+    <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-2">
       <div className="">
-        <h2>Course Quizzes</h2>
-
-        <Button
-          variant="primary"
-          onClick={() =>
-            navigate(`/instructor/courses/${courseId}/quizzes/create`)
-          }
-        >
-          Create Quiz
-        </Button>
+        <PageHeading>Course Quizzes</PageHeading>
       </div>
 
       {quizzes.length === 0 && <p>No quizzes created yet.</p>}
-      <div className="flex">
-        <button
-          onClick={() => {
-            handleQuizFilter("published");
-          }}
-        >
-          Published
-        </button>
-        <button
-          onClick={() => {
-            handleQuizFilter("draft");
-          }}
-        >
-          Draft
-        </button>
-      </div>
+      <TabButton
+        options={["Published", "Draft"]}
+        selectedOption={quizStatusFilter}
+        onChange={handleQuizFilter}
+      />
       {quizzes.map((quiz) => {
-        if (quiz.status === quizStatusFilter) {
+        if (quiz.status === quizStatusFilter.toLowerCase()) {
           return (
-            <Card key={quiz.id} title={quiz.title}>
+            <ListCard key={quiz.id} title={quiz.title} customStyles={"w-80"}>
               <div className="">
-                {quizStatusFilter === "draft" && (
+                {quizStatusFilter === "Draft" && (
                   <Button
                     variant="secondary"
                     onClick={() =>
@@ -81,10 +63,10 @@ export default function InstructorQuizList() {
                   </Button>
                 )}
 
-                {quizStatusFilter === "published" && (
-                  <div className="flex">
+                {quizStatusFilter === "Published" && (
+                  <div className="flex space-x-1">
                     <Button
-                      variant="secondary"
+                      variant="tertiary"
                       onClick={() =>
                         navigate(`/instructor/quizzes/${quiz.id}/analytics`)
                       }
@@ -102,10 +84,18 @@ export default function InstructorQuizList() {
                   </div>
                 )}
               </div>
-            </Card>
+            </ListCard>
           );
         }
       })}
+      <Button
+        variant="primary"
+        onClick={() =>
+          navigate(`/instructor/courses/${courseId}/quizzes/create`)
+        }
+      >
+        Create Quiz
+      </Button>
     </div>
   );
 }

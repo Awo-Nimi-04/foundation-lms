@@ -195,6 +195,7 @@ def generate_quiz_questions(quiz_id):
                 quiz_id = quiz.id,
                 material_id = material_id,
                 question_text = q['question_text'],
+                question_type = q['question_type'],
                 choices=json.dumps(q.get("choices")) if q.get("choices") else None,
                 correct_answer = q['correct_answer'],
                 is_ai_generated = True,
@@ -227,6 +228,19 @@ def start_quiz_attempt(quiz_id):
 
     if quiz.status != "published":
         return jsonify({"error": "Quiz not available"}), 403
+    
+    # Temporary flow: cannot start another attempt until other attempts are graded, even if submitted
+    submitted_not_graded = QuizAttempt.query.filter_by(
+        quiz_id = quiz_id,
+        student_id = student_id,
+        status = "submitted",
+    )
+
+    if submitted_not_graded:
+        return jsonify({
+            "attempt_id": submitted_not_graded.id,
+            "message": "Wait for instructor to grade latest attempt",
+        }), 500
 
     # Prevent multiple active attempts
     existing = QuizAttempt.query.filter_by(
@@ -350,7 +364,15 @@ def get_quizzes_for_course(course_id):
             "title": quiz.title,
             "date_created": quiz.date_created,
             "instructor_id": quiz.instructor_id,
-            "quiz_attempts": student_quiz_attempts,
+            "quiz_attempts": [
+                                {
+                                    "id": attempt.id,
+                                    "score": attempt.score,
+                                    "status": attempt.status,
+                                    "submitted_at": attempt.submitted_at,
+                                }
+                                for attempt in student_quiz_attempts
+                            ],
             "status": quiz.status,
         })
 

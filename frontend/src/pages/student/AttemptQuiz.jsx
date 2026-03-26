@@ -8,10 +8,9 @@ export default function AttemptQuiz() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [attemptId, setAttemptId] = useState();
   const [answerList, setAnswerList] = useState([]);
-  const [answer, setAnswer] = useState("");
   const [quiz, setQuiz] = useState();
   const [isExpiredQuiz, setIsExpiredQuiz] = useState(false);
-  const [questions, setQuestions] = useState();
+  const [questions, setQuestions] = useState([]);
   const [hasStarted, setHasStarted] = useState(false);
 
   useEffect(() => {
@@ -31,7 +30,7 @@ export default function AttemptQuiz() {
     try {
       const res = await api.get(`/quizzes/${quizId}`);
       setQuiz(res.data);
-      setIsExpiredQuiz(isQuizExpired(quiz.due_date));
+      setIsExpiredQuiz(isQuizExpired(res.data.due_date));
     } catch (err) {
       console.error(err);
     }
@@ -77,7 +76,6 @@ export default function AttemptQuiz() {
   };
 
   const handleInputAnswer = (e, questionId) => {
-    setAnswer(e.target.value);
     setAnswerList((prevState) => {
       const existing = prevState.find((ans) => ans.question_id === questionId);
       if (existing) {
@@ -104,6 +102,7 @@ export default function AttemptQuiz() {
       console.log(err);
     }
   };
+  if (!quiz) return <p>Quiz Loading...</p>;
 
   return (
     <div>
@@ -119,13 +118,13 @@ export default function AttemptQuiz() {
         </Button>
       )}
       {isExpiredQuiz && <p>This quiz is no longer available.</p>}
-      {hasStarted && (
+      {hasStarted && questions.length > 0 && (
         <div>
           <h3>Question {currentQuestionIndex + 1}</h3>
           <p>{questions[currentQuestionIndex].question_text}</p>
           {questions[currentQuestionIndex].question_type === "short_answer" && (
             <textarea
-              value={answer}
+              value={answerList[currentQuestionIndex]?.answer}
               onChange={(event) =>
                 handleInputAnswer(event, questions[currentQuestionIndex].id)
               }
@@ -133,7 +132,36 @@ export default function AttemptQuiz() {
             />
           )}
           {questions[currentQuestionIndex].question_type ===
-            "multiple_choice" && (
+            "multiple_choice" &&
+          questions[currentQuestionIndex].is_ai_generated ? (
+            <div>
+              {JSON.parse(questions[currentQuestionIndex].choices)?.map(
+                (choice, index) => {
+                  const letter = String.fromCharCode(65 + index);
+
+                  return (
+                    <label key={index} style={{ display: "block" }}>
+                      <input
+                        type="radio"
+                        name={`question-${questions[currentQuestionIndex].id}`}
+                        value={choice}
+                        checked={
+                          answerList[currentQuestionIndex]?.answer === choice
+                        }
+                        onChange={(event) =>
+                          handleInputAnswer(
+                            event,
+                            questions[currentQuestionIndex].id,
+                          )
+                        }
+                      />
+                      {letter}. {choice}
+                    </label>
+                  );
+                },
+              )}
+            </div>
+          ) : (
             <div>
               {questions[currentQuestionIndex].choices?.map((choice, index) => {
                 const letter = String.fromCharCode(65 + index);
@@ -144,7 +172,9 @@ export default function AttemptQuiz() {
                       type="radio"
                       name={`question-${questions[currentQuestionIndex].id}`}
                       value={choice}
-                      checked={answer === choice}
+                      checked={
+                        answerList[currentQuestionIndex]?.answer === choice
+                      }
                       onChange={(event) =>
                         handleInputAnswer(
                           event,

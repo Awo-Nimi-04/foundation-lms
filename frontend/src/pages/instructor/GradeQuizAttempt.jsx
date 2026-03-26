@@ -15,37 +15,44 @@ export default function GradeQuizAttempt() {
 
   const fetchQuizAttempt = async () => {
     try {
-      const res = await api.get(`/quiz_attempts/quiz/${quizId}/student/${studentIndex}/responses`);
+      const res = await api.get(
+        `/quiz_attempts/quiz/${quizId}/student/${studentIndex}/responses`,
+      );
+      console.log(res.data)
       setAttempt(res.data);
+      const ininitalScores = res.data.responses.map((response) => ({
+        question_id: response.question_id,
+        score: response.score,
+      }));
+      setScores(ininitalScores);
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleScoreChange = (event, questionId) => {
+  const handleScoreChange = (score, questionId) => {
     setScores((prev) => {
       const existing = prev.find((q) => q.question_id === questionId);
 
       if (existing) {
         return prev.map((q) =>
-          q.question_id === questionId
-            ? { ...q, score: Number(event.target.value) }
-            : q,
+          q.question_id === questionId ? { ...q, score: Number(score) } : q,
         );
       }
 
-      return [
-        ...prev,
-        { question_id: questionId, score: Number(event.target.value) },
-      ];
+      return [...prev, { question_id: questionId, score: Number(score) }];
     });
   };
 
   const handleGradeQuiz = async () => {
     try {
-      const res = api.patch(`/quiz_attempts/${attempt.attempt_id}/grade`, {
-        questions: scores,
-      });
+      const res = await api.patch(
+        `/quiz_attempts/${attempt.attempt_id}/grade`,
+        {
+          questions: scores,
+        },
+      );
+      console.log(res.data);
     } catch (err) {
       console.log(err);
     }
@@ -67,29 +74,31 @@ export default function GradeQuizAttempt() {
   return (
     <div>
       <h1>{attempt.quiz_title}</h1>
+      {console.log(studentIndex)}
       <div className="flex">
         <p>Student: {attempt.student_id}</p>
         <p>
-          Total Score: {attempt.score * attempt.quiz_total_score}/
+          Total Score: {Number(attempt.attempt_score) * Number(attempt.quiz_total_score)}/
           {attempt.quiz_total_score}
         </p>
-        <p>Attempt: {attempt.attempt_id}</p>
+        {/* <p>Attempt: {attempt.attempt_id}</p> */}
       </div>
       {attempt.responses?.map((response) => (
-        <div>
+        <div key={response.question_id}>
           <h2>{response.question_text}</h2>
           <p>Student Response: {response.submitted_answer}</p>
           <p>Correct Response: {response.correct_answer}</p>
           <input
             type="number"
+            min={0}
             value={
               scores.find((q) => q.question_id === response.question_id)
-                ?.score ||
-              response?.score ||
+                ?.score ??
+              response?.score ??
               ""
             }
             onChange={(e) => {
-              handleScoreChange(e, response.question_id);
+              handleScoreChange(e.target.value, response.question_id);
             }}
           />
         </div>
@@ -99,7 +108,7 @@ export default function GradeQuizAttempt() {
           Previous
         </Button>
         <Button onClick={handleGradeQuiz}>Grade Quiz</Button>
-        <Button onClick={handleNextStudent} disabled={studentIndex}>
+        <Button onClick={handleNextStudent} disabled={studentIndex === 10}>
           Next
         </Button>
       </div>

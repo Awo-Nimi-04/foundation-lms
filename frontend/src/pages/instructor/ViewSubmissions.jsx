@@ -6,27 +6,26 @@ import Button from "../../components/ui/Button";
 
 export default function ViewSubmissions() {
   const { assignmentId } = useParams();
-  const [submission, setSubmission] = useState();
-  const [currentIndex, setCurrentIndex] = useState(1);
-  const [score, setScore] = useState();
-  const [feedback, setFeedback] = useState();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [submissions, setSubmissions] = useState([]);
+  const [score, setScore] = useState("");
+  const [maxScore, setMaxScore] = useState();
+  const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSubmission(2);
-  }, []);
+    fetchSubmission();
+  }, [currentIndex]);
 
-  const fetchSubmission = async (index) => {
+  const fetchSubmission = async () => {
     setLoading(true);
     try {
-      const res = await api.get(
-        `/assignments/${assignmentId}/submissions/${index}`,
-      );
-      setSubmission(res.data);
-      setCurrentIndex(Number(res.data.student_id));
+      const res = await api.get(`/assignments/${assignmentId}/submissions`);
+      setSubmissions(res.data.submissions);
+      setMaxScore(res.data.max_score);
     } catch (err) {
       console.error(err);
-      setSubmission(null);
+      setSubmissions([]);
     } finally {
       setLoading(false);
     }
@@ -34,16 +33,29 @@ export default function ViewSubmissions() {
 
   const handleNext = () => {
     // get actual no of Submissions
-    if (currentIndex + 1 < 10) fetchSubmission(currentIndex + 1);
+    if (currentIndex + 1 < submissions.length)
+      setCurrentIndex(currentIndex + 1);
   };
 
   const handlePrevious = () => {
-    if (currentIndex > 0) fetchSubmission(currentIndex - 1);
+    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
   };
 
   const handleGrade = async () => {
+    console.log(score, feedback);
     try {
-      await api.patch(`/submissions/${id}/grade`, { score, feedback });
+      await api.patch(
+        `assignments/submissions/${submissions[currentIndex].submission_id}/grade`,
+        {
+          score: score,
+          feedback: feedback,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
       alert("Graded successfully!");
     } catch (err) {
       alert("Grading failed!");
@@ -51,23 +63,23 @@ export default function ViewSubmissions() {
   };
 
   if (loading) return <p>Loading submission...</p>;
-  if (!submission) return <p>No submissions available.</p>;
+  if (submissions.length <= 0) return <p>No submissions available.</p>;
 
   return (
     <div className="">
-      <Card title={`Student: ${submission.student_id}`}>
+      <Card title={`Student: ${submissions[currentIndex].student_id}`}>
         <div className="">
-          {submission.text_submission && (
+          {submissions[currentIndex].submission_text && (
             <div className="">
               <strong>Text Submission</strong>
-              <p>{submission.text_submission}</p>
+              <p>{submissions[currentIndex].submission_text}</p>
             </div>
           )}
-          {submission.file_submission && (
+          {submissions[currentIndex].file_submission && (
             <div className="">
               <strong>File Submission</strong>
               <a
-                href={submission.file_submission}
+                href={submissions[currentIndex].file_submission}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -92,13 +104,17 @@ export default function ViewSubmissions() {
           </div>
 
           <div className="">
-            <p>Status: {submission.status}</p>
-            <p>Grade: {submission.score || "Not yet graded"}</p>
+            <p>Status: {submissions[currentIndex].status}</p>
+            <p>Grade: {submissions[currentIndex].score || "Not yet graded"}</p>
             <p>
-              Submitted: {new Date(submission.submitted_at).toLocaleString()}
+              Submitted:{" "}
+              {new Date(
+                submissions[currentIndex].submitted_at,
+              ).toLocaleString()}
             </p>
-            {submission.score !== null && <p>Score: {submission.score}</p>}
-            {submission.feedback && <p>Feedback: {submission.feedback}</p>}
+            {submissions[currentIndex].feedback && (
+              <p>Feedback: {submissions[currentIndex].feedback}</p>
+            )}
           </div>
 
           <div className="">
@@ -117,11 +133,12 @@ export default function ViewSubmissions() {
             <Button
               variant="secondary"
               onClick={handleNext}
-              disabled={currentIndex + 1 >= 10}
+              disabled={currentIndex + 1 >= submissions.length}
             >
               Next
             </Button>
           </div>
+          <p>Max Score: {maxScore}</p>
         </div>
       </Card>
     </div>

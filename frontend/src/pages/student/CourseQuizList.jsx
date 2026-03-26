@@ -55,7 +55,7 @@ export default function CourseQuizList() {
                   navigate(`/student/quizzes/${quiz.id}/attempt_quiz`)
                 }
               >
-                Start
+                {quiz.quiz_attempts.length > 0 ? "Retry" : "Start"}
               </Button>
             )}
             {isQuizExpired(quiz.due_date) && (

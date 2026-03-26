@@ -1,6 +1,7 @@
+import json
 from extensions import db
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.assignment import Assignment
 from models.user import User
 from models.course import Course
@@ -65,3 +66,29 @@ def get_course_assignments(course_id):
         } 
         for a in assignments
     ]) 
+
+@courses_bp.route("/<int:course_id>/course_materials", methods=["GET"])
+@jwt_required()
+def get_all_course_materials(course_id):
+    identity = json.loads(get_jwt_identity())
+    role = identity["role"]
+    user_id = int(identity["id"])
+
+    course = Course.query.get_or_404(course_id)
+
+    if role == "instructor" and course.instructor_id != user_id:
+        return jsonify({"message": "Unauthorized instructor!"}), 403
+    
+    course_materials = CourseMaterial.query.filter_by(course_id = course_id).all()
+    
+    materials_response = []
+
+    for material in course_materials:
+        materials_response.append({
+            "material_id": material.id,
+            "material_name": material.source_name,
+        })
+    
+    return jsonify({
+        "course_materials": materials_response
+    })
