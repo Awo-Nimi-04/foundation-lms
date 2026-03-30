@@ -201,6 +201,7 @@ def generate_quiz_questions(quiz_id):
                 is_ai_generated = True,
             )
             db.session.add(question)
+        quiz.update_max_score()
         db.session.commit()
 
         return jsonify({
@@ -234,7 +235,7 @@ def start_quiz_attempt(quiz_id):
         quiz_id = quiz_id,
         student_id = student_id,
         status = "submitted",
-    )
+    ).all()
 
     if submitted_not_graded:
         return jsonify({

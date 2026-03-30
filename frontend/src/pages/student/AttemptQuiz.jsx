@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../../api/api";
 import Button from "../../components/ui/Button";
+import dayjs from "dayjs";
+import InnerCard from "../../components/ui/InnerCard";
+import Textarea from "../../components/ui/Textarea";
+import Input from "../../components/ui/Input";
+import Radio from "../../components/ui/Radio";
 
 export default function AttemptQuiz() {
   const { quizId } = useParams();
@@ -105,44 +110,63 @@ export default function AttemptQuiz() {
   if (!quiz) return <p>Quiz Loading...</p>;
 
   return (
-    <div>
-      <div className="flex">
-        <h1>{quiz.title}</h1>
-        <h2>
-          Time Limit: {quiz.time_limit ? `${quiz.time_limit} minutes` : "None"}
-        </h2>
+    <div className="text-center flex flex-col items-center mt-12 min-h-screen space-y-2">
+      <div className="bg-gray-700 text-stone-200 px-4 py-6 rounded-lg space-y-4">
+        <h1 className="text-4xl font-bold">{quiz.title}</h1>
+        <div>
+          <h2 className="font-medium text-md text-yellow-400">
+            Due: {dayjs(quiz.due_date).format("ddd D MMM, YYYY h:mm A")}
+          </h2>
+          <h2 className="text-amber-600 font-semibold text-md">
+            Time Limit:{" "}
+            {quiz.time_limit ? `${quiz.time_limit} minutes` : "None"}
+          </h2>
+        </div>
+
+        {!hasStarted && !isExpiredQuiz && (
+          <Button
+            variant="primary"
+            onClick={handleBeginQuiz}
+            customStyles={"w-20"}
+          >
+            Begin
+          </Button>
+        )}
       </div>
-      {!hasStarted && !isExpiredQuiz && (
-        <Button variant="secondary" onClick={handleBeginQuiz}>
-          Begin
-        </Button>
-      )}
+
       {isExpiredQuiz && <p>This quiz is no longer available.</p>}
       {hasStarted && questions.length > 0 && (
-        <div>
-          <h3>Question {currentQuestionIndex + 1}</h3>
-          <p>{questions[currentQuestionIndex].question_text}</p>
-          {questions[currentQuestionIndex].question_type === "short_answer" && (
-            <textarea
-              value={answerList[currentQuestionIndex]?.answer}
-              onChange={(event) =>
-                handleInputAnswer(event, questions[currentQuestionIndex].id)
-              }
-              placeholder="Type your answer"
-            />
-          )}
-          {questions[currentQuestionIndex].question_type ===
-            "multiple_choice" &&
-          questions[currentQuestionIndex].is_ai_generated ? (
-            <div>
-              {JSON.parse(questions[currentQuestionIndex].choices)?.map(
-                (choice, index) => {
-                  const letter = String.fromCharCode(65 + index);
-
-                  return (
-                    <label key={index} style={{ display: "block" }}>
-                      <input
-                        type="radio"
+        <InnerCard
+          title={`Question ${currentQuestionIndex + 1}`}
+          customStyles={"w-[50%] mt-6"}
+        >
+          <div className="mt-5 mb-8">
+            <p className="text-lg font-semibold">
+              {questions[currentQuestionIndex].question_text}
+            </p>
+            {questions[currentQuestionIndex].question_type ===
+              "short_answer" && (
+              <div className="text-left">
+                <Textarea
+                  label={"Response"}
+                  value={answerList[currentQuestionIndex]?.answer}
+                  onChange={(event) =>
+                    handleInputAnswer(event, questions[currentQuestionIndex].id)
+                  }
+                  placeholder="Type your answer"
+                />
+              </div>
+            )}
+            {questions[currentQuestionIndex].question_type ===
+              "multiple_choice" &&
+            questions[currentQuestionIndex].is_ai_generated ? (
+              <div>
+                {JSON.parse(questions[currentQuestionIndex].choices)?.map(
+                  (choice, index) => {
+                    return (
+                      <Radio
+                        key={index}
+                        customStyles={"my-3 w-["}
                         name={`question-${questions[currentQuestionIndex].id}`}
                         value={choice}
                         checked={
@@ -154,58 +178,61 @@ export default function AttemptQuiz() {
                             questions[currentQuestionIndex].id,
                           )
                         }
-                      />
-                      {letter}. {choice}
-                    </label>
-                  );
-                },
-              )}
-            </div>
-          ) : (
-            <div>
-              {questions[currentQuestionIndex].choices?.map((choice, index) => {
-                const letter = String.fromCharCode(65 + index);
-
-                return (
-                  <label key={index} style={{ display: "block" }}>
-                    <input
-                      type="radio"
-                      name={`question-${questions[currentQuestionIndex].id}`}
-                      value={choice}
-                      checked={
-                        answerList[currentQuestionIndex]?.answer === choice
-                      }
-                      onChange={(event) =>
-                        handleInputAnswer(
-                          event,
-                          questions[currentQuestionIndex].id,
-                        )
-                      }
-                    />
-                    {letter}. {choice}
-                  </label>
-                );
-              })}
-            </div>
-          )}
-          <div className="flex">
-            <button
+                      >
+                        {choice}
+                      </Radio>
+                    );
+                  },
+                )}
+              </div>
+            ) : (
+              <div>
+                {questions[currentQuestionIndex].choices?.map(
+                  (choice, index) => {
+                    return (
+                      <Radio
+                        key={index}
+                        customStyles={"my-3 w-["}
+                        name={`question-${questions[currentQuestionIndex].id}`}
+                        value={choice}
+                        checked={
+                          answerList[currentQuestionIndex]?.answer === choice
+                        }
+                        onChange={(event) =>
+                          handleInputAnswer(
+                            event,
+                            questions[currentQuestionIndex].id,
+                          )
+                        }
+                      >
+                        {choice}
+                      </Radio>
+                    );
+                  },
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-center space-x-3">
+            <Button
+              variant="secondary"
               onClick={handlePreviousQuestion}
               disabled={currentQuestionIndex === 0}
             >
               Previous
-            </button>
-            <button
+            </Button>
+            <Button variant="primary" onClick={handleSubmitQuiz}>
+              Submit
+            </Button>
+            <Button
+              variant="secondary"
               onClick={handleNextQuestion}
               disabled={currentQuestionIndex + 1 === quiz.questions.length}
             >
               Next
-            </button>
+            </Button>
           </div>
-          <Button variant="primary" onClick={handleSubmitQuiz}>
-            Submit Quiz
-          </Button>
-        </div>
+        </InnerCard>
       )}
     </div>
   );

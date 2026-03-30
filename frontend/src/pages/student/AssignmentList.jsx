@@ -3,10 +3,13 @@ import api from "../../api/api";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import PageHeading from "../../components/ui/PageHeading";
+import dayjs from "dayjs";
+import ListCard from "../../components/ui/ListCard";
 
 export default function AssignmentList() {
   const [assignments, setAssignments] = useState([]);
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAssignments();
@@ -22,26 +25,32 @@ export default function AssignmentList() {
   };
 
   return (
-    <div>
-      <h2>Your Assignments</h2>
+    <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-2">
+      <PageHeading>Your Assignments</PageHeading>
 
       {assignments.map((assignment) => (
-        <Card
+        <ListCard
+          customStyles={"w-120"}
           key={assignment.id}
           title={assignment.title}
-          footer={
-            <Button
-              variant="primary"
-              onClick={() =>
-                navigate(`/student/assignments/${assignment.id}/submit`)
-              }
-            >
-              Submit
-            </Button>
+          subtitle={
+            <p className="text-sm text-yellow-500 font-bold mb-2">
+              Due: {dayjs(assignment.due_date).format("ddd D MMM, YYYY h:mm A")}
+            </p>
           }
+          // footer={
+
+          // }
         >
-          <p>Due: {assignment.due_date}</p>
-        </Card>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              navigate(`/student/assignments/${assignment.id}/submit`)
+            }
+          >
+            Submit
+          </Button>
+        </ListCard>
       ))}
     </div>
   );

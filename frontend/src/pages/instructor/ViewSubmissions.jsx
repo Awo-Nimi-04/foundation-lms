@@ -3,6 +3,12 @@ import { useParams } from "react-router-dom";
 import api from "../../api/api";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
+import Textarea from "../../components/ui/Textarea";
+import Label from "../../components/ui/Label";
+import StatItem from "../../components/ui/StatItem";
+import dayjs from "dayjs";
+import Highlight from "../../components/ui/Highlight";
 
 export default function ViewSubmissions() {
   const { assignmentId } = useParams();
@@ -63,61 +69,19 @@ export default function ViewSubmissions() {
   };
 
   if (loading) return <p>Loading submission...</p>;
-  if (submissions.length <= 0) return <p>No submissions available.</p>;
+  if (submissions.length <= 0)
+    return (
+      <div className="flex flex-col justify-center items-center text-center min-h-screen">
+        <p className="text-stone-300">No submissions available.</p>
+      </div>
+    );
 
   return (
-    <div className="">
-      <Card title={`Student: ${submissions[currentIndex].student_id}`}>
-        <div className="">
-          {submissions[currentIndex].submission_text && (
-            <div className="">
-              <strong>Text Submission</strong>
-              <p>{submissions[currentIndex].submission_text}</p>
-            </div>
-          )}
-          {submissions[currentIndex].file_submission && (
-            <div className="">
-              <strong>File Submission</strong>
-              <a
-                href={submissions[currentIndex].file_submission}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Download File
-              </a>
-            </div>
-          )}
-
-          <div>
-            <input
-              type="number"
-              placeholder="Score"
-              value={score}
-              onChange={(e) => setScore(e.target.value)}
-            />
-
-            <textarea
-              placeholder="feedback"
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-            />
-          </div>
-
-          <div className="">
-            <p>Status: {submissions[currentIndex].status}</p>
-            <p>Grade: {submissions[currentIndex].score || "Not yet graded"}</p>
-            <p>
-              Submitted:{" "}
-              {new Date(
-                submissions[currentIndex].submitted_at,
-              ).toLocaleString()}
-            </p>
-            {submissions[currentIndex].feedback && (
-              <p>Feedback: {submissions[currentIndex].feedback}</p>
-            )}
-          </div>
-
-          <div className="">
+    <div className="flex flex-col justify-center items-center text-center min-h-screen">
+      <Card
+        title={`Student: ${submissions[currentIndex].student_id}`}
+        footer={
+          <div className="p-3 space-x-3">
             <Button
               variant="secondary"
               onClick={handlePrevious}
@@ -138,7 +102,75 @@ export default function ViewSubmissions() {
               Next
             </Button>
           </div>
-          <p>Max Score: {maxScore}</p>
+        }
+        customStyles={"w-[50%] py-4 mt-4"}
+      >
+        <div className="text-stone-200 space-y-2 p-2">
+          <StatItem
+            stat={"Status"}
+            value={submissions[currentIndex].status}
+            color={
+              submissions[currentIndex].status === "submitted" ? "green" : null
+            }
+          />
+          <StatItem
+            stat={"Grade"}
+            value={submissions[currentIndex].score || "Not yet graded"}
+            color={submissions[currentIndex].score ? "blue" : "orange"}
+          />
+          <StatItem
+            stat={"Submitted"}
+            value={dayjs(submissions[currentIndex].submitted_at).format(
+              "M/D/YY h:mm a",
+            )}
+          />
+        </div>
+
+        <div className="">
+          {submissions[currentIndex].submission_text && (
+            <div className="flex flex-col items-center w-full my-3">
+              <h1 className="text-stone-300 text-lg font-semibold">
+                Text Submission
+              </h1>
+              <Highlight customStyles={"h-100 w-full text-left"}>
+                {submissions[currentIndex].submission_text}
+              </Highlight>
+            </div>
+          )}
+          {submissions[currentIndex].file_submission && (
+            <div className="">
+              <strong>File Submission</strong>
+              <a
+                href={submissions[currentIndex].file_submission}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Download File
+              </a>
+            </div>
+          )}
+
+          <div className="flex flex-col justify-center items-center space-y-2 text-left p-2">
+            <div className="flex justify-center items-end">
+              <Input
+                label={"Score"}
+                type="number"
+                placeholder="Score"
+                value={score}
+                onChange={(e) => setScore(e.target.value)}
+                customStyles={"w-20"}
+              />
+              <p className="text-lg text-stone-300 ml-2">/ {maxScore}</p>
+            </div>
+
+            <Textarea
+              label={"Feedback"}
+              placeholder="Feedback"
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              customStyles={"w-80"}
+            />
+          </div>
         </div>
       </Card>
     </div>

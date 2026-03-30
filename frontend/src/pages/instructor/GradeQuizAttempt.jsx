@@ -72,10 +72,15 @@ export default function GradeQuizAttempt() {
   };
 
   if (!attempt || attempt.responses.length <= 0)
-    return <p>There is no attempt for this user.</p>;
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen">
+        <p className="text-stone-300">There is no attempt to grade yet . . .</p>
+      </div>
+    );
 
   return (
     <div className="flex flex-col justify-center items-center min-h-screen">
+      {console.log(scores)}
       <Card
         title={`Grade ${attempt.quiz_title}`}
         footer={
@@ -103,8 +108,7 @@ export default function GradeQuizAttempt() {
           <div className="flex space-x-2 items-center">
             <p className="text-lg font-semibold text-stone-200">Score: </p>
             <Label color="orange" size="text-lg">
-              {Number(attempt.attempt_score) * Number(attempt.quiz_total_score)}{" "}
-              / {attempt.quiz_total_score}
+              {Number(attempt.attempt_score)} / {attempt.quiz_total_score}
             </Label>
           </div>
           {/* <p>Attempt: {attempt.attempt_id}</p> */}
@@ -121,7 +125,7 @@ export default function GradeQuizAttempt() {
 
               <div className="ml-auto max-w-xs">
                 <p className="line-clamp-1 font-medium text-yellow-300">
-                  {response.submitted_answer}
+                  {response.submitted_answer || "N/A"}
                 </p>
               </div>
             </div>
@@ -149,7 +153,7 @@ export default function GradeQuizAttempt() {
                 }}
                 customStyles={"w-20 text-center"}
               />
-              <p className="text-lg ml-2">/ {attempt.quiz_total_score}</p>
+              <p className="text-lg ml-2">/ {response.max_score}</p>
             </div>
           </InnerCard>
         ))}

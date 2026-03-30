@@ -17,6 +17,9 @@ class Quiz(db.Model):
     questions = db.relationship("QuizQuestion", backref="quiz", lazy=True)
     course = db.relationship("Course", backref="quizzes")
 
+    def update_max_score(self):
+        self.max_score = sum(q.score_per_question or 0 for q in self.questions)
+
 class QuizQuestion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey("quiz.id"), nullable=False)
@@ -25,5 +28,6 @@ class QuizQuestion(db.Model):
     question_type = db.Column(db.String(50), nullable=False)
     choices = db.Column(db.JSON, nullable=True)
     correct_answer = db.Column(db.Text, nullable=False)
+    score_per_question =db.Column(db.Integer, default=1)
     is_ai_generated = db.Column(db.Boolean, default=False)
     last_edited_by_instructor = db.Column(db.Boolean, default=False)

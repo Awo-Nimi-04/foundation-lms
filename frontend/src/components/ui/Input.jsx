@@ -5,11 +5,15 @@ export default function Input({
   onChange,
   label,
   customStyles,
+  name,
+  checked,
 }) {
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-sm text-stone-300 font-medium text-left">{label}</label>
+        <label className="text-sm text-stone-300 font-medium text-left">
+          {label}
+        </label>
       )}
 
       <input
@@ -18,7 +22,9 @@ export default function Input({
         type={type}
         value={value}
         onChange={onChange}
-        min={type === "number" ? 1 : null}
+        min={type === "number" ? 0 : null}
+        name={name}
+        checked={checked}
       />
     </div>
   );

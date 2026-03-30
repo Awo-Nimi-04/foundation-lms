@@ -24,10 +24,16 @@ export default function QuizAnalytics() {
     }
   };
 
-  if (!performance) return <p>No analytics yet.</p>;
+  if (!performance)
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-stone-200">No analytics yet . . .</p>
+      </div>
+    );
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
+      {console.log(performance)}
       <Card
         title={`${performance.quiz_title} Analytics`}
         customStyles={"py-4 w-[70%]"}
@@ -38,23 +44,21 @@ export default function QuizAnalytics() {
             <StatItem
               color={"yellow"}
               stat={"Average Score"}
-              value={`${Number(performance.average_score) * Number(performance.quiz_max_score)} / ${Number(performance.quiz_max_score)}`}
+              value={`${Number(performance.average_score)} / ${Number(performance.quiz_max_score)}`}
             />
             <StatItem
               color={"green"}
               stat={"Highest Score"}
-              value={`${
-                Number(performance.highest_quiz_score) *
-                Number(performance.quiz_max_score)
-              } / ${Number(performance.quiz_max_score)}`}
+              value={`${Number(
+                performance.highest_quiz_score,
+              )} / ${Number(performance.quiz_max_score)}`}
             />
             <StatItem
               color={"red"}
               stat={"Lowest Score"}
-              value={`${
-                Number(performance.lowest_quiz_score) *
-                Number(performance.quiz_max_score)
-              } / ${Number(performance.quiz_max_score)}`}
+              value={`${Number(
+                performance.lowest_quiz_score,
+              )} / ${Number(performance.quiz_max_score)}`}
             />
           </InnerCard>
           <InnerCard title={"Question Stats"} customStyles={"w-[70%]"}>

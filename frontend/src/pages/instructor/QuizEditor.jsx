@@ -105,6 +105,7 @@ export default function QuizEditor() {
                   question={q}
                   onSave={handleUpdateQuestion}
                   onDelete={() => handleDeleteQuestion(q.id)}
+                  isAIgenerated={q.is_ai_generated}
                 />
               );
             })}
@@ -118,7 +119,7 @@ export default function QuizEditor() {
             customStyles={"w-40"}
             onClick={handlePublish}
           >
-            Publish Quiz
+            Publish
           </Button>
         )}
       </div>

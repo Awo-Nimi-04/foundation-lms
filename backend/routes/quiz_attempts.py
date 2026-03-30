@@ -49,39 +49,35 @@ def submit_attempt(attempt_id):
     question_lookup = {q.id: q for q in questions}
 
     total_score = 0
+    total_max_score = sum(q.score_per_question or 0 for q in question_lookup.values())
+    answered_map = {
+        int(item["question_id"]): item.get("answer", "").strip()
+        for item in answers if item.get("question_id") is not None
+    }
 
-    for item in answers:
-        try:
-            q_id = int(item.get("question_id"))
-        except (ValueError, TypeError):
-            continue  # skip invalid question_id
-
-        student_answer = item.get("answer", "").strip()
-
-        question = question_lookup.get(q_id)
-        if not question:
-            continue
-
+    for q_id, question in question_lookup.items():
+        student_answer = answered_map.get(q_id, "")
         norm_student = normalize_answer(student_answer)
         norm_correct = normalize_answer(question.correct_answer)
-        print(f"Q{q_id}: Student='{norm_student}' | Correct='{norm_correct}'")
 
-        correct = norm_student == norm_correct
-        score = 1.0 if correct else 0.0
+        correct = norm_student == norm_correct if student_answer else False
+
+        question_max = question.score_per_question or 0
+        score = question_max if correct else 0.0
+
         total_score += score
 
         qa = QuestionAttempt(
             attempt_id=attempt.id,
             student_id=attempt.student_id,
             question_id=q_id,
-            submitted_answer=student_answer,
-            score=score
+            submitted_answer=student_answer,  # empty string if unanswered
+            score=score,
+            max_score=question_max,
         )
         db.session.add(qa)
 
-    final_score = total_score / len(question_lookup) if question_lookup else 0
-
-    attempt.score = final_score
+    attempt.score = total_score
     attempt.status = "submitted"
     attempt.submitted_at = datetime.now()
 
@@ -89,7 +85,8 @@ def submit_attempt(attempt_id):
 
     return jsonify({
         "attempt_id": attempt.id,
-        "score": round(final_score, 2)
+        "score": round(total_score, 2),
+        "max_score": total_max_score
     })
 
 @quiz_attempts_bp.route("/<int:quiz_id>/student", methods=['GET'])
@@ -104,10 +101,21 @@ def get_student_attempts_for_quiz(quiz_id):
             "message": "Unauthorized, only for students!"
         }), 403
     
-    quiz_attempts = QuizAttempt.query.filter_by(
-        student_id = user_id,
-        quiz_id = quiz_id,
-        status = "graded",
+    quiz = Quiz.query.get_or_404(quiz_id)
+    
+    # quiz_attempts = QuizAttempt.query.filter_by(
+    #     student_id = user_id,
+    #     quiz_id = quiz_id,
+    #     status = "graded",
+    # ).all()
+
+    quiz_attempts= (
+        QuizAttempt.query
+        .filter(
+            QuizAttempt.quiz_id == quiz_id,
+            QuizAttempt.student_id == user_id,
+            QuizAttempt.status.in_(["submitted", "graded"])
+        )
     ).all()
 
     quiz_attempts_list = []
@@ -117,6 +125,8 @@ def get_student_attempts_for_quiz(quiz_id):
             "id": quiz_attempt.id,
         })
     return jsonify({
+        "quiz_title": quiz.title,
+        "quiz_max_score": quiz.max_score,
         "quiz_attempts": quiz_attempts_list,
     })
 
@@ -145,9 +155,10 @@ def get_attempts_for_quiz(quiz_id):
 @quiz_attempts_bp.route("/<int:attempt_id>/quiz_attempt_analytics")
 @jwt_required()
 def quiz_attempt_analytics(attempt_id):
+
     identity = json.loads(get_jwt_identity())
     student_id = int(identity["id"])
-    
+
     attempt = QuizAttempt.query.get(attempt_id)
 
     if not attempt:
@@ -155,38 +166,40 @@ def quiz_attempt_analytics(attempt_id):
 
     if student_id != attempt.student_id:
         return jsonify({"error": "Unauthorized access"}), 403
-    
+
     question_attempts = QuestionAttempt.query.filter_by(attempt_id=attempt_id).all()
     if not question_attempts:
         return jsonify({"error": "No question attempts found"}), 404
-    
-    material_stats = defaultdict(lambda: {"correct": 0, "total": 0})
 
-    total_score = 0
-    total_possible = 0
+    material_stats = defaultdict(lambda: {"score": 0, "max_score": 0})
+
+    # ✔ Use stored attempt score (source of truth)
+    total_score = attempt.score
+
+    # ✔ derive max score from quiz definition
+    quiz = Quiz.query.get(attempt.quiz_id)
+    total_possible = sum(q.score_per_question or 0 for q in quiz.questions)
+
     for qa in question_attempts:
         question = QuizQuestion.query.get(qa.question_id)
         if not question:
             continue
 
-        # Accumulate total score
-        total_score += qa.score or 0
-        total_possible += 1  
-
-        # Accumulate per material
         material = material_stats[question.material_id]
-        if qa.score and qa.score > 0:
-            material["correct"] += 1
-        material["total"] += 1
-    
+        material["score"] += qa.score or 0
+        material["max_score"] += qa.max_score or 0
+
     analysis = []
     for material_id, stats in material_stats.items():
-        mastery_percent = (stats["correct"] / stats["total"]) * 100 if stats["total"] else 0
-        # Fetch material title
+
+        mastery_percent = (
+            (stats["score"] / stats["max_score"]) * 100
+            if stats["max_score"] else 0
+        )
+
         material = CourseMaterial.query.get(material_id)
         material_source_name = material.source_name if material else "Unknown Material"
 
-        # Strength vs Weakness
         if mastery_percent >= 70:
             strength_or_weakness = "Strength"
             recommendation = "Continue to next material or practice exercises."
@@ -201,18 +214,17 @@ def quiz_attempt_analytics(attempt_id):
             "strength_or_weakness": strength_or_weakness,
             "recommendation": recommendation
         })
-    
-    # Final quiz-level summary
+
     total_percent = (total_score / total_possible) * 100 if total_possible else 0
 
     return jsonify({
-            "quiz_attempt_id": attempt_id,
-            "quiz_id": attempt.quiz_id,
-            "student_id": attempt.student_id,
-            "total_score": total_score,
-            "total_percent": round(total_percent, 2),
-            "analysis_per_material": analysis
-        })
+        "quiz_attempt_id": attempt_id,
+        "quiz_id": attempt.quiz_id,
+        "student_id": attempt.student_id,
+        "total_score": total_score,
+        "total_percent": round(total_percent, 2),
+        "analysis_per_material": analysis
+    })
 
 @quiz_attempts_bp.route("/<int:quiz_id>/instructor_analytics")
 @jwt_required()
@@ -239,14 +251,23 @@ def instructor_quiz_analytics(quiz_id):
         return jsonify({"error": "No attempts found"}), 404
 
     # Prepare aggregation structures
-    question_stats = defaultdict(lambda: {"attempts": 0, "correct": 0})
-    material_stats = defaultdict(lambda: {"attempts": 0, "correct": 0})
-    student_max_scores = defaultdict(lambda: 0)  # tracks highest attempt per student
-
+    question_stats = defaultdict(lambda: {
+        "correct": 0,
+        "attempts": 0
+    })
+    material_stats = defaultdict(lambda: {
+        "correct": 0,
+        "attempts": 0
+    })
+    student_best = defaultdict(lambda: 0) # tracks highest attempt per student
 
     for attempt in attempts:
         student_id = attempt.student_id
-        student_max_scores[student_id] = max(student_max_scores[student_id], attempt.score or 0)
+    
+        student_best[student_id] = max(
+            student_best[student_id],
+            attempt.score
+        )
 
         question_attempts = QuestionAttempt.query.filter_by(attempt_id=attempt.id).all()
         for qa in question_attempts:
@@ -255,22 +276,22 @@ def instructor_quiz_analytics(quiz_id):
                 continue
 
             # Per-question stats
+            is_correct = (qa.score or 0) >= (qa.max_score or 0)
+
             qs = question_stats[qa.question_id]
             qs["attempts"] += 1
-            if qa.score and qa.score > 0:
-                qs["correct"] += 1
+            qs["correct"] += 1 if is_correct else 0
 
             # Per-material stats
             ms = material_stats[question.material_id]
             ms["attempts"] += 1
-            if qa.score and qa.score > 0:
-                ms["correct"] += 1
+            ms["correct"] += 1 if is_correct else 0
 
     # Compute question analysis
     question_analysis = []
     for question_id, stats in question_stats.items():
         question = QuizQuestion.query.get(question_id)
-        accuracy = (stats["correct"] / stats["attempts"]) * 100 if stats["attempts"] else 0
+        accuracy = (stats["correct"] / stats["attempts"]) * 100
         question_analysis.append({
             "question_id": question_id,
             "question_text": question.question_text if question else "Unknown",
@@ -286,7 +307,7 @@ def instructor_quiz_analytics(quiz_id):
     material_analysis = []
     for material_id, stats in material_stats.items():
         material = CourseMaterial.query.get(material_id)
-        mastery = (stats["correct"] / stats["attempts"]) * 100 if stats["attempts"] else 0
+        mastery  = stats["correct"] / stats["attempts"] * 100
         material_analysis.append({
             "material_id": material_id,
             "material_source_name": material.source_name if material else "Unknown Material",
@@ -295,12 +316,15 @@ def instructor_quiz_analytics(quiz_id):
         })
 
     # Lowest and highest quiz score across students
-    all_max_scores = list(student_max_scores.values())
+    all_max_scores = list(student_best.values())
     lowest_quiz_score = min(all_max_scores) if all_max_scores else 0
     highest_quiz_score = max(all_max_scores) if all_max_scores else 0
 
     total_attempts = len(attempts)
-    avg_score = round(sum(all_max_scores) / len(all_max_scores), 2) if all_max_scores else 0
+    avg_score = round(
+        sum(student_best.values()) / len(student_best),
+        2
+    )
 
     return jsonify({
         "quiz_id": quiz.id,
@@ -341,38 +365,43 @@ def grade_quiz_attempt(attempt_id):
 
     attempt = QuizAttempt.query.get_or_404(attempt_id)
     quiz = Quiz.query.get_or_404(attempt.quiz_id)
-    
+
     if quiz.instructor_id != instructor_id:
         return jsonify({"error": "Unauthorized"}), 403  
-    
+
     data = request.get_json()
     question_updates = data.get("questions", [])
 
-    question_attempts = QuestionAttempt.query.filter_by(attempt_id = attempt_id).all()
+    question_attempts = QuestionAttempt.query.filter_by(attempt_id=attempt_id).all()
     question_lookup = {qa.question_id: qa for qa in question_attempts}
 
-    total_score = 0
-    max_total = 0
-
+    # Apply instructor updates (RAW SCORES ONLY)
     for q_update in question_updates:
         q_id = q_update.get("question_id")
-        score = float(q_update.get("score", 0))
-        # feedback = q_update.get("feedback", "")
+
+        try:
+            score = float(q_update.get("score", 0))
+        except (TypeError, ValueError):
+            continue
 
         qa = question_lookup.get(q_id)
         if not qa:
             continue
 
-        qa.score = score
-        # qa.instructor_feedback = feedback
+        # optional safety clamp
+        qa.score = max(0, min(score, qa.max_score))
+
         qa.manually_graded = True
         qa.auto_graded = False
         qa.graded_at = datetime.now()
 
-        total_score += score
-        max_total += qa.max_score or 1.0
+    # Recompute from truth
+    question_attempts = QuestionAttempt.query.filter_by(attempt_id=attempt_id).all()
 
-    attempt.score = total_score / max_total if max_total else 0
+    total_score = sum(qa.score or 0 for qa in question_attempts)
+    max_total = sum(qa.max_score for qa in question_attempts)
+
+    attempt.score = total_score
     attempt.status = "graded"
     attempt.submitted_at = attempt.submitted_at or datetime.now()
 
@@ -383,12 +412,13 @@ def grade_quiz_attempt(attempt_id):
         "student_id": attempt.student_id,
         "quiz_id": attempt.quiz_id,
         "status": attempt.status,
-        "score": round(attempt.score, 2),
+        "score": round(total_score, 2),
+        "max_score": max_total,
         "graded_questions": [
             {
                 "question_id": qa.question_id,
                 "score": qa.score,
-                # "feedback": qa.instructor_feedback
+                "max_score": qa.max_score
             } for qa in question_attempts
         ]
     })
@@ -441,7 +471,8 @@ def get_student_quiz_responses(quiz_id, student_id):
             "question_type": q.question_type,
             "correct_answer": q.correct_answer,
             "submitted_answer": qa.submitted_answer if qa else None,
-            "score": qa.score if qa else None
+            "score": qa.score if qa else None,
+            "max_score": quiz.max_score
         })
 
     return jsonify({

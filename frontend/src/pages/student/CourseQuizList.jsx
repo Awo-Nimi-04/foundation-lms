@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/api";
-import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import PageHeading from "../../components/ui/PageHeading";
+import Label from "../../components/ui/Label";
+import ListCard from "../../components/ui/ListCard";
+import dayjs from "dayjs";
 
 export default function CourseQuizList() {
   const { courseId } = useParams();
@@ -38,16 +41,35 @@ export default function CourseQuizList() {
   if (loading) return <p>Loading quizzes...</p>;
 
   return (
-    <div className="">
-      <div className="">
-        <h2>Course Quizzes</h2>
-      </div>
+    <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-2">
+      <PageHeading>Course Quizzes</PageHeading>
 
-      {quizzes.length === 0 && <p>No quizzes yet.</p>}
+      {quizzes.length === 0 && (
+        <p className="text-stone-300">No quizzes yet.</p>
+      )}
 
       {quizzes.map((quiz) => (
-        <Card key={quiz.id} title={quiz.title}>
-          <div className="">
+        <ListCard
+          key={quiz.id}
+          title={quiz.title}
+          subtitle={
+            <p className="text-sm text-yellow-500 font-bold mb-2">
+              Due: {dayjs(quiz.due_date).format("ddd D MMM, YYYY h:mm A")}
+            </p>
+          }
+          customStyles={"w-140"}
+        >
+          <div className="space-x-3">
+            {quiz.quiz_attempts.length > 0 && (
+              <Button
+                variant="tertiary"
+                onClick={() => {
+                  navigate(`/student/quizzes/${quiz.id}/quiz_attempts`);
+                }}
+              >
+                View Analytics
+              </Button>
+            )}
             {!isQuizExpired(quiz.due_date) && (
               <Button
                 variant="secondary"
@@ -58,12 +80,9 @@ export default function CourseQuizList() {
                 {quiz.quiz_attempts.length > 0 ? "Retry" : "Start"}
               </Button>
             )}
-            {isQuizExpired(quiz.due_date) && (
-                <p className="text-red-500">Unavailable</p>
-            )}
-            {quiz.quiz_attempts.length > 0 && <Button variant="secondary" onClick={()=>{ navigate(`/student/quizzes/${quiz.id}/quiz_attempts`)}}>View Analytics</Button>}
+            {isQuizExpired(quiz.due_date) && <Label color="red">Expired</Label>}
           </div>
-        </Card>
+        </ListCard>
       ))}
     </div>
   );

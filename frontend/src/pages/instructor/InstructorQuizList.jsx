@@ -35,59 +35,66 @@ export default function InstructorQuizList() {
 
   if (loading) return <p>Loading quizzes...</p>;
 
+  const filteredQuizzes = quizzes.filter(
+    (quiz) => quiz.status === quizStatusFilter.toLowerCase(),
+  );
+
   return (
     <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-2">
       <div className="">
         <PageHeading>Course Quizzes</PageHeading>
       </div>
 
-      {quizzes.length === 0 && <p className="text-stone-300 mt-4">No quizzes created yet.</p>}
+      {quizzes.length === 0 && (
+        <p className="text-stone-300 mt-4">No quizzes created yet.</p>
+      )}
       <TabButton
         options={["Published", "Draft"]}
         selectedOption={quizStatusFilter}
         onChange={handleQuizFilter}
       />
-      {quizzes.map((quiz) => {
-        if (quiz.status === quizStatusFilter.toLowerCase()) {
-          return (
-            <ListCard key={quiz.id} title={quiz.title} customStyles={"w-[80%]"}>
-              <div className="">
-                {quizStatusFilter === "Draft" && (
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      navigate(`/instructor/quizzes/${quiz.id}/quiz_editor`)
-                    }
-                  >
-                    Edit
-                  </Button>
-                )}
+      {filteredQuizzes.length === 0 && (
+        <p className="text-stone-400 text-center mt-6">
+          No {quizStatusFilter.toLowerCase()} quizzes found . . .
+        </p>
+      )}
+      {filteredQuizzes.length > 0 && filteredQuizzes.map((quiz) => (
+        <ListCard key={quiz.id} title={quiz.title} customStyles="w-[80%]">
+          <div>
+            {quizStatusFilter === "Draft" && (
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  navigate(`/instructor/quizzes/${quiz.id}/quiz_editor`)
+                }
+              >
+                Edit
+              </Button>
+            )}
 
-                {quizStatusFilter === "Published" && (
-                  <div className="flex space-x-1">
-                    <Button
-                      variant="tertiary"
-                      onClick={() =>
-                        navigate(`/instructor/quizzes/${quiz.id}/analytics`)
-                      }
-                    >
-                      Analytics
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() =>
-                        navigate(`/instructor/quizzes/${quiz.id}/grade`)
-                      }
-                    >
-                      Grade
-                    </Button>
-                  </div>
-                )}
+            {quizStatusFilter === "Published" && (
+              <div className="flex space-x-1">
+                <Button
+                  variant="tertiary"
+                  onClick={() =>
+                    navigate(`/instructor/quizzes/${quiz.id}/analytics`)
+                  }
+                >
+                  Analytics
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    navigate(`/instructor/quizzes/${quiz.id}/grade`)
+                  }
+                >
+                  Grade
+                </Button>
               </div>
-            </ListCard>
-          );
-        }
-      })}
+            )}
+          </div>
+        </ListCard>
+      ))}
       <Button
         variant="primary"
         onClick={() =>

@@ -13,12 +13,16 @@ export default function QuizQuestionEditor({
   onDelete,
   quizId,
   isNew,
+  isAIgenerated = false,
 }) {
   const { currentCourse } = useCourse();
   const [hasChanged, setHasChanged] = useState(false);
   const [text, setText] = useState(question?.question_text || "");
   const [type, setType] = useState(question?.question_type || "short_answer");
   const [choices, setChoices] = useState(question?.choices || ["", "", "", ""]);
+  const [questionPoints, setQuestionPoints] = useState(
+    question?.score_per_question || 1,
+  );
   const [correctAnswer, setCorrectAnswer] = useState(
     question?.correct_answer || "",
   );
@@ -105,6 +109,7 @@ export default function QuizQuestionEditor({
                 setType(question?.question_type || "short_answer");
                 setText(question?.question_text || "");
                 setCurrentMaterial(question?.material_id || "1");
+                setQuestionPoints(question?.score_per_question || 1);
               }}
             >
               Cancel
@@ -113,7 +118,7 @@ export default function QuizQuestionEditor({
         </div>
       }
     >
-      <div className="space-y-3">
+      <div className="space-y-3 py-1 px-2">
         <Input
           label={"Question Text"}
           value={text}
@@ -153,22 +158,39 @@ export default function QuizQuestionEditor({
         <div className="flex flex-col space-y-3">
           {type === "multiple_choice" && (
             <>
-              {choices.map((c, i) => (
-                <Input
-                  label={`Choice ${i + 1}`}
-                  key={i}
-                  value={c}
-                  placeholder={`Choice ${i + 1}`}
-                  onChange={(e) => {
-                    setChoices(
-                      choices.map((ch, idx) =>
-                        idx === i ? e.target.value : ch,
-                      ),
-                    );
-                    setHasChanged(true);
-                  }}
-                />
-              ))}
+              {isAIgenerated
+                ? JSON.parse(choices)?.map((c, i) => (
+                    <Input
+                      label={`Choice ${i + 1}`}
+                      key={i}
+                      value={c}
+                      placeholder={`Choice ${i + 1}`}
+                      onChange={(e) => {
+                        setChoices(
+                          choices.map((ch, idx) =>
+                            idx === i ? e.target.value : ch,
+                          ),
+                        );
+                        setHasChanged(true);
+                      }}
+                    />
+                  ))
+                : choices?.map((c, i) => (
+                    <Input
+                      label={`Choice ${i + 1}`}
+                      key={i}
+                      value={c}
+                      placeholder={`Choice ${i + 1}`}
+                      onChange={(e) => {
+                        setChoices(
+                          choices.map((ch, idx) =>
+                            idx === i ? e.target.value : ch,
+                          ),
+                        );
+                        setHasChanged(true);
+                      }}
+                    />
+                  ))}
             </>
           )}
 
@@ -178,6 +200,17 @@ export default function QuizQuestionEditor({
             placeholder={"Correct Answer"}
             onChange={(e) => {
               setCorrectAnswer(e.target.value);
+              setHasChanged(true);
+            }}
+          />
+
+          <Input
+            label={"Total Question Points"}
+            type={"number"}
+            value={questionPoints}
+            placeholder={"Total points for this question"}
+            onChange={(e) => {
+              setQuestionPoints(e.target.value);
               setHasChanged(true);
             }}
           />

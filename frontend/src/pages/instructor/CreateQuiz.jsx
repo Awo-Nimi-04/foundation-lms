@@ -79,12 +79,12 @@ export default function CreateQuiz() {
         footer={
           <>
             {isCreated && (
-              <div className="flex">
-                <Button variant="primary" onClick={generateAIQuizQuestions}>
+              <div className="flex px-2 pb-4 space-x-4">
+                <Button variant="secondary" onClick={generateAIQuizQuestions}>
                   Generate Questions with AI
                 </Button>
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   onClick={() => {
                     navigate(`/instructor/quizzes/${quizId}/quiz_editor`);
                   }}
@@ -105,7 +105,7 @@ export default function CreateQuiz() {
             type={"text"}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={"Assignment title"}
+            placeholder={"Quiz title"}
           />
 
           <Input
