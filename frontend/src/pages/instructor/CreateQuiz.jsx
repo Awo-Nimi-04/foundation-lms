@@ -5,30 +5,21 @@ import api from "../../api/api";
 import PageHeading from "../../components/ui/PageHeading";
 import Card from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
+import { useLoading } from "../../context/LoadingContext";
 
 export default function CreateQuiz() {
   const navigate = useNavigate();
-  const [quizId, setQuizId] = useState();
+  const { showLoading, hideLoading } = useLoading();
   const { courseId } = useParams();
   const [title, setTitle] = useState("");
-  const [isCreated, setIsCreated] = useState(false);
-  const [timeLimit, setTimeLimit] = useState(null);
-  const [questionCount, setQuestionCount] = useState(null);
+  const [timeLimit, setTimeLimit] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
-    if (!title || !dueDate) {
-      setError("Title and due date are required.");
-      return;
-    }
-
+    showLoading("Creating Quiz . . .");
     try {
-      setLoading(true);
       const res = await api.post(
         `/quizzes/courses/${courseId}/create_quiz`,
         {
@@ -42,60 +33,18 @@ export default function CreateQuiz() {
           },
         },
       );
-      console.log("Quiz created", res.data);
-      setQuizId(res.data.quiz_id);
-      setIsCreated(true);
+      navigate(`/instructor/quizzes/${res.data.quiz_id}/quiz_editor`);
     } catch (err) {
       console.error(err);
-      setError("Failed to create quiz");
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateAIQuizQuestions = async () => {
-    try {
-      const res = await api.post(
-        `/quizzes/${quizId}/generate_questions`,
-        { num_questions: questionCount },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-      navigate(`/instructor/quizzes/${quizId}/quiz_editor`);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to generate quiz questions");
+      hideLoading();
     }
   };
 
   return (
     <div className="text-center flex flex-col justify-center min-h-screen space-y-4">
       <PageHeading>Create A Quiz</PageHeading>
-      <Card
-        customStyles={"w-100 mx-auto"}
-        footer={
-          <>
-            {isCreated && (
-              <div className="flex px-2 pb-4 space-x-4">
-                <Button variant="secondary" onClick={generateAIQuizQuestions}>
-                  Generate Questions with AI
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    navigate(`/instructor/quizzes/${quizId}/quiz_editor`);
-                  }}
-                >
-                  Create Questions Manually
-                </Button>
-              </div>
-            )}
-          </>
-        }
-      >
+      <Card customStyles={"w-100 mx-auto"}>
         <form
           onSubmit={handleSubmit}
           className="p-4 text-left flex flex-col space-y-3"
@@ -106,14 +55,6 @@ export default function CreateQuiz() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={"Quiz title"}
-          />
-
-          <Input
-            label={"Number of Questions (AI Generation Only)"}
-            value={questionCount || ""}
-            type={"number"}
-            onChange={(e) => setQuestionCount(e.target.value)}
-            placeholder={"Set the number of questions"}
           />
 
           <Input
@@ -132,13 +73,9 @@ export default function CreateQuiz() {
             onChange={(e) => setDueDate(e.target.value)}
           />
 
-          {error && <p className="">{error}</p>}
-
-          {!isCreated && (
-            <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? "Creating..." : "Create"}
-            </Button>
-          )}
+          <Button type="submit" variant="primary">
+            Create
+          </Button>
         </form>
       </Card>
     </div>

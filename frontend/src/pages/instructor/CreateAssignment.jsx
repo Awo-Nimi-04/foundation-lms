@@ -6,51 +6,46 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Textarea from "../../components/ui/Textarea";
 import PageHeading from "../../components/ui/PageHeading";
+import { useLoading } from "../../context/LoadingContext";
+import { useCourse } from "../../context/CoursecONTEXT.JSX";
 export default function CreateAssignment() {
   const navigate = useNavigate();
-
+  const { currentCourse } = useCourse();
+  const { showLoading, hideLoading } = useLoading();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
-    if (!title || !dueDate) {
-      setError("Title and due date are required.");
-      return;
-    }
+    const formData = new FormData();
+
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("due_date", dueDate);
+    formData.append("course_id", currentCourse.id);
+
     if (file) {
-      formData.append("file", file);
+      formData.append("reference_file", file);
     }
+
+    showLoading("Creating Assignment...");
 
     try {
-      setLoading(true);
-      const res = await api.post(
-        "/assignments",
-        {
-          title: title,
-          description: description,
-          due_date: dueDate,
-          course_id: 1,
+      const res = await api.post("/assignments", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-      console.log("Assignment created", res.data);
-      navigate("/instructor/course/1/assignments");
+      });
+
+      // console.log("Assignment created", res.data);
+      navigate(`/instructor/course/${currentCourse.id}/assignments`);
     } catch (err) {
       console.error(err);
-      setError("Failed to create assignment");
     } finally {
-      setLoading(false);
+      hideLoading();
     }
   };
   return (
@@ -87,20 +82,36 @@ export default function CreateAssignment() {
             <label className="text-sm text-stone-300 font-medium">
               Reference File (optional)
             </label>
-            <label className="flex items-center p-2 border border-stone-600 rounded-lg bg-stone-900 cursor-pointer">
-              <span className="text-stone-300">Upload file</span>
-              <input
-                type="file"
-                className="hidden"
-                onChange={(e) => setFile(e.target.files[0])}
-              />
-            </label>
+            {!file && (
+              <label className="flex items-center p-2 border border-stone-600 rounded-lg bg-stone-900 cursor-pointer">
+                <span className="text-stone-300 p-2">Upload file</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => setFile(e.target.files[0])}
+                />
+              </label>
+            )}
+            {file && (
+              <div className="flex items-center justify-between p-2 border border-stone-600 rounded-lg bg-stone-900 cursor-pointer">
+                <p className="text-blue-300 line-clamp-1 overflow-auto">
+                  {file.name}
+                </p>
+                <Button
+                  variant="tertiary"
+                  onClick={() => {
+                    setFile(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
           </div>
 
-          {error && <p className="">{error}</p>}
           <div className="text-center my-3">
-            <Button type="submit" variant="primary" customStyles={"w-full"} disabled={loading}>
-              {loading ? "Creating..." : "Create"}
+            <Button type="submit" variant="primary" customStyles={"w-full"}>
+              Create
             </Button>
           </div>
         </form>

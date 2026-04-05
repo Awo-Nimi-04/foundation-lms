@@ -1,5 +1,6 @@
 from extensions import db
 from datetime import datetime
+from sqlalchemy import func
 
 class Quiz(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -14,8 +15,18 @@ class Quiz(db.Model):
     due_date = db.Column(db.DateTime, nullable=True)
     time_limit_minutes = db.Column(db.Integer, nullable=True)
     ####Questionsssss
-    questions = db.relationship("QuizQuestion", backref="quiz", lazy=True)
+    questions = db.relationship(
+        "QuizQuestion",
+        backref="quiz",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
     course = db.relationship("Course", backref="quizzes")
+
+    def get_max_score(self):
+        return db.session.query(
+            func.coalesce(func.sum(QuizQuestion.score_per_question), 0)
+        ).filter(QuizQuestion.quiz_id == self.id).scalar()
 
     def update_max_score(self):
         self.max_score = sum(q.score_per_question or 0 for q in self.questions)
@@ -29,5 +40,4 @@ class QuizQuestion(db.Model):
     choices = db.Column(db.JSON, nullable=True)
     correct_answer = db.Column(db.Text, nullable=False)
     score_per_question =db.Column(db.Integer, default=1)
-    is_ai_generated = db.Column(db.Boolean, default=False)
     last_edited_by_instructor = db.Column(db.Boolean, default=False)

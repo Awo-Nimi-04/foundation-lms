@@ -8,6 +8,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.user import User
 from models.course import Course
 from models.course_material import CourseMaterial
+from models.enrollment import Enrollment
 from models.quiz_attempt import QuizAttempt, QuestionAttempt
 from models.quiz import Quiz, QuizQuestion
 from utils.decorators import instructor_required
@@ -71,7 +72,7 @@ def submit_attempt(attempt_id):
             attempt_id=attempt.id,
             student_id=attempt.student_id,
             question_id=q_id,
-            submitted_answer=student_answer,  # empty string if unanswered
+            submitted_answer=student_answer,
             score=score,
             max_score=question_max,
         )
@@ -126,7 +127,7 @@ def get_student_attempts_for_quiz(quiz_id):
         })
     return jsonify({
         "quiz_title": quiz.title,
-        "quiz_max_score": quiz.max_score,
+        "quiz_max_score": quiz.get_max_score(),
         "quiz_attempts": quiz_attempts_list,
     })
 
@@ -198,11 +199,11 @@ def quiz_attempt_analytics(attempt_id):
         )
 
         material = CourseMaterial.query.get(material_id)
-        material_source_name = material.source_name if material else "Unknown Material"
+        material_source_name = material.file_name if material else "Unknown Material"
 
         if mastery_percent >= 70:
             strength_or_weakness = "Strength"
-            recommendation = "Continue to next material or practice exercises."
+            recommendation = "Continue on other material or practice exercises."
         else:
             strength_or_weakness = "Weakness"
             recommendation = f"Review {material_source_name} and retry related exercises."
@@ -310,7 +311,7 @@ def instructor_quiz_analytics(quiz_id):
         mastery  = stats["correct"] / stats["attempts"] * 100
         material_analysis.append({
             "material_id": material_id,
-            "material_source_name": material.source_name if material else "Unknown Material",
+            "material_source_name": material.file_name if material else "Unknown Material",
             "mastery_percent": round(mastery, 2),
             "attempts": stats["attempts"]
         })
@@ -328,7 +329,7 @@ def instructor_quiz_analytics(quiz_id):
 
     return jsonify({
         "quiz_id": quiz.id,
-        "quiz_max_score": quiz.max_score,
+        "quiz_max_score": quiz.get_max_score(),
         "quiz_title": quiz.title,
         "total_attempts": total_attempts,
         "average_score": avg_score,
@@ -423,17 +424,68 @@ def grade_quiz_attempt(attempt_id):
         ]
     })
 
+@quiz_attempts_bp.route("/<int:attempt_id>/responses", methods=["GET"])
+@jwt_required()
+def get_quiz_attempt_responses(attempt_id):
+    identity = json.loads(get_jwt_identity())
+    user_id = int(identity["id"])
+    role = identity["role"]
+
+    attempt = QuizAttempt.query.get_or_404(attempt_id)
+    quiz = Quiz.query.get_or_404(attempt.quiz_id)
+
+    if role == "student":
+        enrollment = Enrollment.query.filter_by(
+            student_id = user_id,
+            course_id = quiz.course_id
+        )
+
+        if not enrollment:
+            return jsonify({"error": "Unauthorized This student is not enrolled in this course."}), 403
+
+    # Fetch all questions
+    questions = QuizQuestion.query.filter_by(quiz_id=quiz.id).all()
+
+    # Fetch student's answers for this attempt
+    question_attempts = QuestionAttempt.query.filter_by(
+        attempt_id=attempt_id
+    ).all()
+
+    attempt_lookup = {qa.question_id: qa for qa in question_attempts}
+
+    responses = []
+
+    for q in questions:
+        qa = attempt_lookup.get(q.id)
+
+        responses.append({
+            "question_id": q.id,
+            "question_text": q.question_text,
+            "question_type": q.question_type,
+            "correct_answer": q.correct_answer,
+            "submitted_answer": qa.submitted_answer if qa else None,
+            "score": qa.score if qa else None,
+            "max_score": q.score_per_question
+        })
+
+    return jsonify({"responses": responses})
+
 @quiz_attempts_bp.route("/quiz/<int:quiz_id>/student/<int:student_id>/responses", methods=["GET"])
 @instructor_required
 def get_student_quiz_responses(quiz_id, student_id):
 
     identity = json.loads(get_jwt_identity())
-    instructor_id = int(identity["id"])
+    user_id = int(identity["id"])
+    role = identity["role"]
 
     quiz = Quiz.query.get_or_404(quiz_id)
+    user = User.query.get_or_404(student_id)
+
+    if user.role == "instructor":
+        return jsonify({"error": "Unavaialble feature for instructor"}), 400
 
     # Ensure instructor owns this quiz
-    if quiz.instructor_id != instructor_id:
+    if role == "instructor" and quiz.instructor_id != user_id:
         return jsonify({"error": "Unauthorized"}), 403
 
     attempt = (
@@ -448,7 +500,14 @@ def get_student_quiz_responses(quiz_id, student_id):
     )
 
     if not attempt:
-        return jsonify({"error": "No submitted attempt found"}), 404
+        return jsonify({
+        "quiz_id": quiz_id,
+        "quiz_total_score": quiz.get_max_score(),
+        "quiz_title": quiz.title,
+        "student_id": student_id,
+        "student_email": user.email,
+        "status": "not_submitted",
+    })
 
     # Fetch all questions
     questions = QuizQuestion.query.filter_by(quiz_id=quiz_id).all()
@@ -472,16 +531,18 @@ def get_student_quiz_responses(quiz_id, student_id):
             "correct_answer": q.correct_answer,
             "submitted_answer": qa.submitted_answer if qa else None,
             "score": qa.score if qa else None,
-            "max_score": quiz.max_score
+            "max_score": q.score_per_question
         })
 
     return jsonify({
         "quiz_id": quiz_id,
         "attempt_score": attempt.score,
-        "quiz_total_score": quiz.max_score,
+        "quiz_total_score": quiz.get_max_score(),
         "quiz_title": quiz.title,
         "student_id": student_id,
+        "student_email": user.email,
         "attempt_id": attempt.id,
         "submitted_at": attempt.submitted_at,
-        "responses": responses
+        "responses": responses,
+        "status": "submitted",
     })

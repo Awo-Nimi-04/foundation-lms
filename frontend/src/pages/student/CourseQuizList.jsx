@@ -21,6 +21,7 @@ export default function CourseQuizList() {
   const fetchQuizzes = async () => {
     try {
       const res = await api.get(`/quizzes/course/${courseId}`);
+      // console.log(res.data.message);
       setQuizzes(res.data.message || []);
     } catch (err) {
       console.error("Failed to fetch quizzes", err);
@@ -44,9 +45,7 @@ export default function CourseQuizList() {
     <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-2">
       <PageHeading>Course Quizzes</PageHeading>
 
-      {quizzes.length === 0 && (
-        <p className="text-stone-300">No quizzes yet.</p>
-      )}
+      {quizzes.length === 0 && <p className="text-stone-300">No quizzes yet</p>}
 
       {quizzes.map((quiz) => (
         <ListCard
@@ -77,7 +76,11 @@ export default function CourseQuizList() {
                   navigate(`/student/quizzes/${quiz.id}/attempt_quiz`)
                 }
               >
-                {quiz.quiz_attempts.length > 0 ? "Retry" : "Start"}
+                {quiz.quiz_attempts.length === 0
+                  ? "Start"
+                  : quiz.quiz_attempts[0].status === "in_progress"
+                    ? "Resume"
+                    : "Retry"}
               </Button>
             )}
             {isQuizExpired(quiz.due_date) && <Label color="red">Expired</Label>}

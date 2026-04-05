@@ -38,7 +38,7 @@ def get_quiz_questions(quiz_id):
             "correct_answer": q.correct_answer,
             "material_id": q.material_id,
             "choices": q.choices,
-            "is_ai_generated": q.is_ai_generated,
+            "score_per_question": q.score_per_question,
         })
 
     return jsonify({"message": question_list}), 200
@@ -70,15 +70,13 @@ def edit_question(question_id):
         question.question_text
     )
     question.question_type = data.get("question_type", question.question_type)
-    question.score_per_question = data.get("score_per_question", question.score_per_question)
+    question.score_per_question = int(data.get("score_per_question", question.score_per_question))
     question.choices = data.get("choices", question.choices)
     question.correct_answer = data.get(
         "correct_answer",
         question.correct_answer
     )
-    question.is_ai_generated = False
 
-    quiz.update_max_score()
     db.session.commit()
 
     return jsonify({
@@ -87,7 +85,6 @@ def edit_question(question_id):
         "question_text": question.question_text,
         "question_type": question.question_type,
         "score_per_question": question.score_per_question,
-        "is_ai_generated": question.is_ai_generated,
         "choices": question.choices,
         "correct_answer": question.correct_answer,
         })
@@ -111,7 +108,6 @@ def delete_question(question_id):
             "error": "Cannot delete questions from a published quiz"
         }), 403
 
-    quiz.update_max_score()
     db.session.delete(question)
     db.session.commit()
 
@@ -140,7 +136,7 @@ def add_question(quiz_id):
     question_text = data.get("question_text")
     material_id = data.get("material_id")
     correct_answer = data.get("correct_answer")
-    score_per_question = data.get("score_per_question")
+    score_per_question = int(data.get("score_per_question"))
     question_type = data.get("question_type")
     choices = data.get("choices")
 
@@ -160,10 +156,9 @@ def add_question(quiz_id):
         question_type=question_type,
         choices=choices,
         correct_answer=correct_answer,
-        score_per_question=score_per_question,
+        score_per_question=score_per_question if score_per_question else 1,
     )
 
-    quiz.update_max_score()
     db.session.add(question)
     db.session.commit()
 
@@ -172,7 +167,6 @@ def add_question(quiz_id):
         "id": question.id,
         "question_text": question.question_text,
         "question_type": question.question_type,
-        "is_ai_generated": question.is_ai_generated,
         "choices": question.choices,
         "correct_answer": question.correct_answer,
     }), 201

@@ -33,7 +33,7 @@ export default function QuizAnalytics() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
-      {console.log(performance)}
+      {/* {console.log(performance)} */}
       <Card
         title={`${performance.quiz_title} Analytics`}
         customStyles={"py-4 w-[70%]"}
@@ -66,7 +66,7 @@ export default function QuizAnalytics() {
               <p className="font-semibold w-20">Easiest</p>
 
               <div className="ml-auto max-w-xs">
-                <p className="line-clamp-1 font-medium text-green-300">
+                <p className="line-clamp-1 font-medium text-green-300 w-40 lg:w-80">
                   {performance.easiest_question.question_text}
                 </p>
               </div>
@@ -80,7 +80,7 @@ export default function QuizAnalytics() {
               <p className="font-semibold w-20">Hardest</p>
 
               <div className="ml-auto max-w-xs">
-                <p className="line-clamp-1 font-medium text-red-300">
+                <p className="line-clamp-1 font-medium text-red-300 w-40 lg:w-80">
                   {performance.hardest_question.question_text}
                 </p>
               </div>
@@ -93,10 +93,11 @@ export default function QuizAnalytics() {
           </InnerCard>
           <InnerCard title={"Materials Analysis"} customStyles={"w-[70%]"}>
             {performance.material_analysis.map((material) => (
-              <>
+              <div key={material.id}>
                 <StatItem
                   stat={"Material"}
                   value={material.material_source_name}
+                  labelStyling={"line-clamp-1 w-40 lg:w-60 text-center"}
                 />
                 <StatItem
                   color={"purple"}
@@ -108,7 +109,7 @@ export default function QuizAnalytics() {
                   stat={"Total Attempts On Material"}
                   value={material.attempts}
                 />
-              </>
+              </div>
             ))}
           </InnerCard>
         </div>

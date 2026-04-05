@@ -5,53 +5,58 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Textarea from "../../components/ui/Textarea";
-import Label from "../../components/ui/Label";
 import StatItem from "../../components/ui/StatItem";
 import dayjs from "dayjs";
 import Highlight from "../../components/ui/Highlight";
+import { useLoading } from "../../context/LoadingContext";
 
 export default function ViewSubmissions() {
   const { assignmentId } = useParams();
+  const { showLoading, hideLoading } = useLoading();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [submissions, setSubmissions] = useState([]);
-  const [score, setScore] = useState("");
+  const [submissions, setSubmissions] = useState();
+  const [scores, setScores] = useState({});
+  const [feedBackList, setFeedbackList] = useState({});
   const [maxScore, setMaxScore] = useState();
   const [feedback, setFeedback] = useState("");
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchSubmission();
   }, [currentIndex]);
 
   const fetchSubmission = async () => {
-    setLoading(true);
+    showLoading("Retrieving Submissions . . .");
     try {
       const res = await api.get(`/assignments/${assignmentId}/submissions`);
-      setSubmissions(res.data.submissions);
+      setSubmissions(res.data);
       setMaxScore(res.data.max_score);
     } catch (err) {
       console.error(err);
-      setSubmissions([]);
     } finally {
-      setLoading(false);
+      hideLoading();
     }
   };
 
   const handleNext = () => {
-    // get actual no of Submissions
-    if (currentIndex + 1 < submissions.length)
-      setCurrentIndex(currentIndex + 1);
+    const index =
+      currentIndex + 1 >= submissions.students.length
+        ? currentIndex
+        : currentIndex + 1;
+    setCurrentIndex(index);
   };
 
   const handlePrevious = () => {
-    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
+    const index = currentIndex - 1 < 0 ? currentIndex : currentIndex - 1;
+    setCurrentIndex(index);
   };
 
   const handleGrade = async () => {
-    console.log(score, feedback);
+    // console.log(score, feedback);
+    // console.log(submissions);
+    showLoading("Grading Submission . . .");
     try {
       await api.patch(
-        `assignments/submissions/${submissions[currentIndex].submission_id}/grade`,
+        `assignments/submissions/${submissions.students[currentIndex].submission_id}/grade`,
         {
           score: score,
           feedback: feedback,
@@ -63,13 +68,16 @@ export default function ViewSubmissions() {
         },
       );
       alert("Graded successfully!");
+      fetchSubmission();
     } catch (err) {
       alert("Grading failed!");
+      console.error(err);
+    } finally {
+      hideLoading();
     }
   };
 
-  if (loading) return <p>Loading submission...</p>;
-  if (submissions.length <= 0)
+  if (!submissions)
     return (
       <div className="flex flex-col justify-center items-center text-center min-h-screen">
         <p className="text-stone-300">No submissions available.</p>
@@ -79,7 +87,7 @@ export default function ViewSubmissions() {
   return (
     <div className="flex flex-col justify-center items-center text-center min-h-screen">
       <Card
-        title={`Student: ${submissions[currentIndex].student_id}`}
+        title={`Student: ${submissions.students[currentIndex].email}`}
         footer={
           <div className="p-3 space-x-3">
             <Button
@@ -97,7 +105,7 @@ export default function ViewSubmissions() {
             <Button
               variant="secondary"
               onClick={handleNext}
-              disabled={currentIndex + 1 >= submissions.length}
+              disabled={currentIndex + 1 >= submissions.students.length}
             >
               Next
             </Button>
@@ -108,56 +116,93 @@ export default function ViewSubmissions() {
         <div className="text-stone-200 space-y-2 p-2">
           <StatItem
             stat={"Status"}
-            value={submissions[currentIndex].status}
+            value={
+              submissions.students[currentIndex].status === "submitted"
+                ? "Submitted"
+                : "Not Submitted"
+            }
             color={
-              submissions[currentIndex].status === "submitted" ? "green" : null
+              submissions.students[currentIndex].status === "submitted"
+                ? "green"
+                : "red"
             }
           />
           <StatItem
             stat={"Grade"}
-            value={submissions[currentIndex].score || "Not yet graded"}
-            color={submissions[currentIndex].score ? "blue" : "orange"}
+            value={
+              submissions.students[currentIndex].status === "submitted"
+                ? submissions.students[currentIndex].score || "Not yet graded"
+                : "N/A"
+            }
+            color={submissions.students[currentIndex].score ? "blue" : "orange"}
           />
           <StatItem
             stat={"Submitted"}
-            value={dayjs(submissions[currentIndex].submitted_at).format(
-              "M/D/YY h:mm a",
-            )}
+            value={
+              submissions.students[currentIndex].status === "submitted"
+                ? dayjs(submissions.students[currentIndex].submitted_at).format(
+                    "M/D/YY h:mm a",
+                  )
+                : "N/A"
+            }
           />
-        </div>
-
-        <div className="">
-          {submissions[currentIndex].submission_text && (
+          {submissions.students[currentIndex].status !== "submitted" && (
+            <p className="text-left font-medium text-stone-400 text-lg">
+              No submission for this student
+            </p>
+          )}
+          {submissions.students[currentIndex].submission_text && (
             <div className="flex flex-col items-center w-full my-3">
               <h1 className="text-stone-300 text-lg font-semibold">
                 Text Submission
               </h1>
               <Highlight customStyles={"h-100 w-full text-left"}>
-                {submissions[currentIndex].submission_text}
+                {submissions.students[currentIndex].submission_text}
               </Highlight>
             </div>
           )}
-          {submissions[currentIndex].file_submission && (
-            <div className="">
-              <strong>File Submission</strong>
-              <a
-                href={submissions[currentIndex].file_submission}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Download File
-              </a>
-            </div>
+          {submissions.students[currentIndex].submission_file && (
+            <>
+              <p className="text-sm text-stone-300 font-medium text-left">
+                File Submission
+              </p>
+              <div className="flex items-center space-x-4">
+                <Highlight
+                  customStyles={"line-clamp-1 lg:line-clamp-none text-center"}
+                >
+                  {submissions.students[currentIndex].submission_file}
+                </Highlight>
+                <a
+                  href={submissions.students[currentIndex].submission_file_url}
+                  target="_blank"
+                  className="text-blue-400"
+                >
+                  Download
+                </a>
+              </div>
+            </>
           )}
+        </div>
 
+        <div className="">
           <div className="flex flex-col justify-center items-center space-y-2 text-left p-2">
             <div className="flex justify-center items-end">
               <Input
                 label={"Score"}
                 type="number"
                 placeholder="Score"
-                value={score}
-                onChange={(e) => setScore(e.target.value)}
+                value={
+                  scores[submissions.students[currentIndex].student_id] ??
+                  submissions.students[currentIndex].score ??
+                  ""
+                }
+                onChange={(e) => {
+                  setScores({
+                    ...scores,
+                    [submissions.students[currentIndex].student_id]:
+                      e.target.value,
+                  });
+                }}
                 customStyles={"w-20"}
               />
               <p className="text-lg text-stone-300 ml-2">/ {maxScore}</p>
@@ -166,9 +211,19 @@ export default function ViewSubmissions() {
             <Textarea
               label={"Feedback"}
               placeholder="Feedback"
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              customStyles={"w-80"}
+              value={
+                scores[submissions.students[currentIndex].student_id] ??
+                submissions.students[currentIndex].feedback ??
+                ""
+              }
+              onChange={(e) => {
+                setFeedbackList({
+                  ...feedBackList,
+                  [submissions.students[currentIndex].student_id]:
+                    e.target.value,
+                });
+              }}
+              customStyles={"lg:w-80 w-60"}
             />
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/api";
+import { useCourse } from "./CourseContext";
 
 const AuthContext = createContext();
 
@@ -8,7 +9,7 @@ export function AuthProvider({ children }) {
 
   const login = (token, userData) => {
     localStorage.setItem("token", token);
-    localStorage.setItem("course", 1);
+    // localStorage.setItem("course", 1);
     setUser(userData);
   };
 

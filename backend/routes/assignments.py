@@ -1,3 +1,4 @@
+import cloudinary
 import json
 import os
 from flask import Blueprint, request, jsonify, current_app
@@ -7,10 +8,20 @@ from werkzeug.utils import secure_filename
 from extensions import db
 from models.assignment import Assignment, AssignmentSubmission
 from models.course import Course
+from models.enrollment import Enrollment
 from models.user import User
+from sqlalchemy import func, and_
 from utils.decorators import instructor_required
 
 assignments_bp = Blueprint("assignments", __name__, url_prefix="/assignments")
+
+cloudinary.config(
+    cloud_name=os.getenv("CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
+)
+
+
 
 @assignments_bp.route("/<int:assignment_id>", methods=["GET"])
 @jwt_required()
@@ -20,7 +31,6 @@ def get_assignment_by_id(assignment_id):
     user_id = int(identity["id"])
     role = identity["role"]
 
-    student_id = request.args.get("student_id", type=int)
 
     assignment = Assignment.query.get_or_404(assignment_id)
     course = Course.query.get_or_404(assignment.course_id)
@@ -32,12 +42,12 @@ def get_assignment_by_id(assignment_id):
 
     latest_submission = None
 
-    if student_id:
+    if role == "student":
         latest_submission = (
             AssignmentSubmission.query
             .filter_by(
                 assignment_id=assignment_id,
-                student_id=student_id
+                student_id=user_id
             )
             .order_by(AssignmentSubmission.version.desc())
             .first()
@@ -51,6 +61,8 @@ def get_assignment_by_id(assignment_id):
         "max_score": assignment.max_score,
         "allow_text": assignment.allow_text_submission,
         "allow_file": assignment.allow_file_submission,
+        "reference_file_name": assignment.reference_file_name,
+        "reference_file_url": assignment.reference_file_url,
 
         "latest_submission": {
             "submission_id": latest_submission.id,
@@ -58,6 +70,7 @@ def get_assignment_by_id(assignment_id):
             "version": latest_submission.version,
             "submission_text": latest_submission.submission_text,
             "submission_file": latest_submission.submission_file,
+            "submission_file_url": latest_submission.submission_file_url,
             "score": latest_submission.score,
             "feedback": latest_submission.feedback,
             "status": latest_submission.status,
@@ -84,26 +97,49 @@ def create_assignment():
     identity = json.loads(get_jwt_identity())
     instructor_id = int(identity["id"])
 
-    data = request.get_json()
+    data = request.form
 
-    assignment = Assignment(
-        course_id = data["course_id"],
-        instructor_id = instructor_id,
-        title = data["title"],
-        description = data.get("description"),
-        due_date = datetime.fromisoformat(data["due_date"]) if data.get("due_date") else None,
-        max_score = data.get("max_score") if data.get("max_score") else 100,
-        allow_text_submission = data.get("allow_text_submission") if data.get("allow_text_submission") else True,
-        allow_file_submission = data.get("allow_file_submission") if data.get("allow_file_submission") else True,
-    )
+    # get optional file
+    file = request.files.get("reference_file")
 
-    db.session.add(assignment)
-    db.session.commit()
+    file_url = None
+    file_name = None
 
-    return jsonify({
-        "message": "Assignment created",
-        "assignment_id": assignment.id,
-    }), 201
+    try:
+        if file:
+            upload_result = cloudinary.uploader.upload(
+                file,
+                resource_type="auto",
+                folder="assignment_references"
+            )
+
+            file_url = upload_result["secure_url"]
+            file_name = file.filename
+
+        assignment = Assignment(
+            course_id=int(data["course_id"]),
+            instructor_id=instructor_id,
+            title=data["title"],
+            description=data.get("description"),
+            due_date=datetime.fromisoformat(data["due_date"]) if data.get("due_date") else None,
+            max_score=float(data.get("max_score", 100)),
+            allow_text_submission=data.get("allow_text_submission", "true").lower() == "true",
+            allow_file_submission=data.get("allow_file_submission", "true").lower() == "true",
+            reference_file_name=file_name,
+            reference_file_url=file_url,
+        )
+
+        db.session.add(assignment)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Assignment created",
+            "assignment_id": assignment.id,
+            "reference_file_url": file_url
+        }), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @assignments_bp.route("/<int:assignment_id>/submit", methods=["POST"])
 @jwt_required()
@@ -127,39 +163,51 @@ def submit_assignment(assignment_id):
     if latest_submission:
         next_version = latest_submission.version + 1
 
-    # Case 1: JSON submission
-    file_path = None
+    file_url = None
+    file_name = None
     text_submission = None
+
+    # Case 1: JSON submission (text submission only)
     if request.is_json:
         data = request.get_json()
         text_submission = data.get("text_content")
 
     # Case 2: multipart form submission (file + text)
     else:
+        text_submission = request.form.get("text_content")
         file = request.files.get("file")
 
-        if file and assignment.allow_file_submission:
-            filename = secure_filename(
-                f"student_{student_id}_assignment_{assignment_id}_v{next_version}_{file.filename}"
+        if file:
+            if not assignment.allow_file_submission:
+                return jsonify({"error": "File submissions are not allowed for this assignment"}), 400
+
+            try:
+                upload_result = cloudinary.uploader.upload(
+                    file,
+                    resource_type="auto",
+                    folder="assignment_submissions",
+                    public_id=f"student_{student_id}_assignment_{assignment_id}_v{next_version}"
                 )
 
-            upload_folder = os.path.join(
-                current_app.root_path,
-                "uploads",
-                "assignment files",
-            )
-            os.makedirs(upload_folder, exist_ok=True)
+                file_url = upload_result["secure_url"]
+                file_name = file.filename
 
-            save_path = os.path.join(upload_folder, filename)
-            file.save(save_path)
+            except Exception as e:
+                return jsonify({
+                    "error": "File upload failed",
+                    "details": str(e)
+                }), 500
             
-            file_path = f"uploads/assignment_files/{filename}"
+    # Prevent Empty submission        
+    if not text_submission and not file_url:
+        return jsonify({"error": "Submission cannot be empty"}), 400
 
     submission = AssignmentSubmission(
         assignment_id = assignment_id,
         student_id = student_id,
         submission_text = text_submission,
-        submission_file = file_path,
+        submission_file = file_name,
+        submission_file_url = file_url,
         submitted_at = datetime.now(),
         status = "submitted",
         version = next_version,
@@ -226,7 +274,7 @@ def grade_submission(submission_id):
     submission.score = data["score"]
     submission.feedback = data.get("feedback")
     submission.graded_at = datetime.now()
-    submission.status = "graded"
+    submission.status = "submitted"
 
     db.session.commit()
 
@@ -251,42 +299,52 @@ def get_student_latest_submissions(assignment_id):
     latest_versions = (
         db.session.query(
             AssignmentSubmission.student_id,
-            db.func.max(AssignmentSubmission.version).label("latest_version")
+            func.max(AssignmentSubmission.version).label("latest_version")
         )
         .filter(AssignmentSubmission.assignment_id == assignment_id)
         .group_by(AssignmentSubmission.student_id)
         .subquery()
     )
 
-    latest_submissions = (
-        db.session.query(AssignmentSubmission)
-        .join(
+    # Main query: Enrollment + User + Latest Submission
+    results = (
+        db.session.query(Enrollment, User, AssignmentSubmission)
+        .join(User, Enrollment.student_id == User.id)  # ✅ join user
+        .outerjoin(
             latest_versions,
-            (AssignmentSubmission.student_id == latest_versions.c.student_id) &
-            (AssignmentSubmission.version == latest_versions.c.latest_version)
+            Enrollment.student_id == latest_versions.c.student_id
         )
-        .filter(AssignmentSubmission.assignment_id == assignment_id)
+        .outerjoin(
+            AssignmentSubmission,
+            and_(
+                AssignmentSubmission.student_id == Enrollment.student_id,
+                AssignmentSubmission.assignment_id == assignment_id,
+                AssignmentSubmission.version == latest_versions.c.latest_version
+            )
+        )
+        .filter(Enrollment.course_id == course.id)
         .all()
     )
 
     return jsonify({
-            "max_score": assignment.max_score,
-            "submissions":
-            [
-                {
-                    "submission_id": s.id,
-                    "student_id": s.student_id,
-                    "version": s.version,
-                    "submission_text": s.submission_text,
-                    "submission_file": s.submission_file,
-                    "score": s.score,
-                    "feedback": s.feedback,
-                    "status": s.status,
-                    "submitted_at": s.submitted_at.isoformat() if s.submitted_at else None,
+        "assignment_id": assignment_id,
+        "max_score": assignment.max_score,
+        "students": [
+            {
+                "student_id": e.student_id,
+                "email": u.email,
+                "submission_id": s.id if s else None,
+                "version": s.version if s else None,
+                "submission_text": s.submission_text if s else None,
+                "submission_file": s.submission_file if s else None,
+                "score": s.score if s else None,
+                "feedback": s.feedback if s else None,
+                "status": s.status if s else "not_submitted",
+                "submitted_at": s.submitted_at.isoformat() if s and s.submitted_at else None,
             }
-                for s in latest_submissions
+            for e, u, s in results
         ]
-    })
+    }), 200
 
 @assignments_bp.route("/course/<int:course_id>", methods=["GET"])
 @jwt_required()

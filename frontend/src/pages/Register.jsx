@@ -7,33 +7,29 @@ import PageHeading from "../components/ui/PageHeading";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
 import Button from "../components/ui/Button";
+import { useLoading } from "../context/LoadingContext";
 
 export default function Register() {
   const { login } = useAuth();
   const { setCurrentCourse } = useCourse();
+  const { showLoading, hideLoading } = useLoading();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
   const navigate = useNavigate();
 
   const handleRegister = async () => {
+    showLoading("Creating account . . .");
     try {
       const res = await api.post("/auth/register", { email, password, role });
-      login(res.data.access_token, {
-        id: res.data.user_id,
-        role: role,
-        email: email,
-      });
-      setCurrentCourse({ id: 1 });
-
-      if (role === "student") {
-        navigate("/student/assignments");
-      } else {
-        navigate("/instructor/course/1/assignments");
-      }
+      hideLoading();
+      alert("Account created successfully!")
+      navigate("/");
     } catch (err) {
       alert("Failed to register user!");
       console.log(err.message);
+    } finally {
+      hideLoading();
     }
   };
 

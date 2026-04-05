@@ -16,6 +16,11 @@ import CourseQuizList from "./pages/student/CourseQuizList";
 import GradeQuizAttempt from "./pages/instructor/GradeQuizAttempt";
 import QuizAnalytics from "./pages/instructor/QuizAnalytics";
 import Register from "./pages/Register";
+import InstructorCourseDashboard from "./pages/instructor/InstructorCourseDashboard";
+import CreateCourse from "./pages/instructor/CreateCourse";
+import CourseMaterialUpload from "./pages/instructor/CourseMaterialUpload";
+import StudentCourseDashboard from "./pages/student/StudentCourseDashboard";
+import EnrollCourses from "./pages/student/EnrollCourses";
 
 function App() {
   return (
@@ -25,7 +30,24 @@ function App() {
         <Route path="/register" element={<Register />} />
         {/* ######### STUDENT ROUTES ######### */}
         <Route
-          path="/student/assignments"
+          path="/student/all_courses"
+          element={
+            <ProtectedRoute role={"student"}>
+              <EnrollCourses />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student/courses"
+          element={
+            <ProtectedRoute role={"student"}>
+              <StudentCourseDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/course/:courseId/assignments"
           element={
             <ProtectedRoute role={"student"}>
               <AssignmentList />
@@ -70,6 +92,33 @@ function App() {
         />
 
         {/* ######### INSTRUCTOR ROUTES ######### */}
+        <Route
+          path="/instructor/courses"
+          element={
+            <ProtectedRoute role={"instructor"}>
+              <InstructorCourseDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/instructor/courses/create_course"
+          element={
+            <ProtectedRoute role={"instructor"}>
+              <CreateCourse />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/instructor/course/:courseId/files"
+          element={
+            <ProtectedRoute role={"instructor"}>
+              <CourseMaterialUpload />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/instructor/assignments/:assignmentId/submissions"
           element={

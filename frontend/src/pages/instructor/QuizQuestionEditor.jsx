@@ -13,7 +13,6 @@ export default function QuizQuestionEditor({
   onDelete,
   quizId,
   isNew,
-  isAIgenerated = false,
 }) {
   const { currentCourse } = useCourse();
   const [hasChanged, setHasChanged] = useState(false);
@@ -53,7 +52,8 @@ export default function QuizQuestionEditor({
   };
 
   const handleSave = async () => {
-    console.log(question);
+    // console.log(question);
+    // console.log(questionPoints)
     try {
       const payload = {
         question_text: text,
@@ -61,6 +61,7 @@ export default function QuizQuestionEditor({
         correct_answer: correctAnswer,
         choices: type === "multiple_choice" ? choices : null,
         material_id: currentMaterial,
+        score_per_question: questionPoints,
       };
 
       let res;
@@ -74,6 +75,7 @@ export default function QuizQuestionEditor({
         );
         onSave(res.data);
       }
+      setHasChanged(false);
     } catch (err) {
       console.error(err);
       alert("Failed to save question.");
@@ -90,6 +92,7 @@ export default function QuizQuestionEditor({
             variant="secondary"
             customStyles={"w-20 font-bold"}
             onClick={handleSave}
+            disabled={!hasChanged}
           >
             Save
           </Button>
@@ -98,7 +101,7 @@ export default function QuizQuestionEditor({
               Delete
             </Button>
           )}
-          {hasChanged && !isNew && (
+          {hasChanged && (
             <Button
               variant="tertiary"
               customStyles={"w-20 font-bold"}
@@ -131,15 +134,18 @@ export default function QuizQuestionEditor({
 
         <Select
           label={"Material"}
-          value={currentCourse}
+          value={currentMaterial}
           onChange={(e) => {
             setCurrentMaterial(e.target.value);
             setHasChanged(true);
           }}
         >
+          <option value="">
+            Select a file
+          </option>
           {courseMaterials?.map((material) => (
-            <option key={material.material_id} value={material.material_id}>
-              {material.material_name}
+            <option key={material.id} value={material.id}>
+              {material.file_name}
             </option>
           ))}
         </Select>
@@ -158,39 +164,22 @@ export default function QuizQuestionEditor({
         <div className="flex flex-col space-y-3">
           {type === "multiple_choice" && (
             <>
-              {isAIgenerated
-                ? JSON.parse(choices)?.map((c, i) => (
-                    <Input
-                      label={`Choice ${i + 1}`}
-                      key={i}
-                      value={c}
-                      placeholder={`Choice ${i + 1}`}
-                      onChange={(e) => {
-                        setChoices(
-                          choices.map((ch, idx) =>
-                            idx === i ? e.target.value : ch,
-                          ),
-                        );
-                        setHasChanged(true);
-                      }}
-                    />
-                  ))
-                : choices?.map((c, i) => (
-                    <Input
-                      label={`Choice ${i + 1}`}
-                      key={i}
-                      value={c}
-                      placeholder={`Choice ${i + 1}`}
-                      onChange={(e) => {
-                        setChoices(
-                          choices.map((ch, idx) =>
-                            idx === i ? e.target.value : ch,
-                          ),
-                        );
-                        setHasChanged(true);
-                      }}
-                    />
-                  ))}
+              {choices?.map((c, i) => (
+                <Input
+                  label={`Choice ${i + 1}`}
+                  key={i}
+                  value={c}
+                  placeholder={`Choice ${i + 1}`}
+                  onChange={(e) => {
+                    setChoices(
+                      choices.map((ch, idx) =>
+                        idx === i ? e.target.value : ch,
+                      ),
+                    );
+                    setHasChanged(true);
+                  }}
+                />
+              ))}
             </>
           )}
 

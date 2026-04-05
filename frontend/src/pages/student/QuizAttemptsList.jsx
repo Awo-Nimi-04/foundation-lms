@@ -8,12 +8,15 @@ import PageHeading from "../../components/ui/PageHeading";
 import Card from "../../components/ui/Card";
 import StatItem from "../../components/ui/StatItem";
 import Label from "../../components/ui/Label";
+import { useAuth } from "../../context/AuthContext";
 
 export default function QuizAttemptsList() {
   const { quizId } = useParams();
+  const { user } = useAuth();
   const [quiz, setQuiz] = useState();
   const [attempts, setAttempts] = useState([]);
   const [selectedAttempt, setSelectedAttempt] = useState();
+  const [responses, setResponses] = useState([]);
   const [isLoading, setIsloading] = useState(false);
 
   useEffect(() => {
@@ -28,6 +31,18 @@ export default function QuizAttemptsList() {
         title: res.data.quiz_title,
         maxScore: res.data.quiz_max_score,
       });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchResponses = async (attemptId) => {
+    try {
+      const res = await api.get(
+        `/quiz_attempts/${attemptId}/responses`,
+      );
+      // console.log(res.data.responses);
+      setResponses(res.data.responses);
     } catch (err) {
       console.error(err);
     }
@@ -65,6 +80,7 @@ export default function QuizAttemptsList() {
                 variant="secondary"
                 onClick={() => {
                   getAttemptAnalytics(attempt.id);
+                  fetchResponses(attempt.id)
                 }}
               >
                 View
@@ -75,8 +91,13 @@ export default function QuizAttemptsList() {
       )}
       {isLoading && <p>Analyzing...</p>}
       {!selectedAttempt && (
-        <p className="text-stone-300">
-          Select an attempt to analyze your performance.
+        <p className="text-stone-300 font-semibold mt-3">
+          Select an attempt to analyze your performance
+        </p>
+      )}
+      {attempts.length === 0 && (
+        <p className="text-stone-400 mt-5">
+          You have submitted no attempts for this quiz
         </p>
       )}
       {selectedAttempt && (
@@ -110,7 +131,7 @@ export default function QuizAttemptsList() {
           </div>
           <InnerCard title={"Analysis by Material"}>
             {selectedAttempt.analysis_per_material.map((material) => (
-              <div  key={material.material_id} className="my-3">
+              <div key={material.material_id} className="my-3">
                 <div className="space-y-2">
                   <StatItem
                     stat={"Material"}
@@ -152,6 +173,42 @@ export default function QuizAttemptsList() {
               </div>
             ))}
           </InnerCard>
+        </Card>
+      )}
+      {selectedAttempt && responses.length > 0 && (
+        <Card
+          title={`Your Answers`}
+          customStyles={"text-center py-4 w-[80%] mx-auto"}
+        >
+          {responses?.map((response, idx) => (
+            <InnerCard
+              title={`Question ${idx + 1}`}
+              key={response.question_id}
+              customStyles={"my-4"}
+            >
+              <h2 className="font-semibold text-lg">
+                {response.question_text}
+              </h2>
+              <div className="flex w-full items-center">
+                <p className="mr-auto font-medium w-40">Student Response</p>
+
+                <div className="ml-auto max-w-xs">
+                  <p className="line-clamp-1 font-medium text-yellow-300">
+                    {response.submitted_answer || "N/A"}
+                  </p>
+                </div>
+              </div>
+              <div className="mr-auto flex w-full items-center">
+                <p className="font-medium w-40">Correct Response</p>
+
+                <div className="ml-auto max-w-xs">
+                  <p className="line-clamp-1 font-medium text-green-300">
+                    {response.correct_answer}
+                  </p>
+                </div>
+              </div>
+            </InnerCard>
+          ))}
         </Card>
       )}
     </div>

@@ -8,6 +8,15 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(50), nullable=False)
 
+    enrollments = db.relationship("Enrollment", back_populates="student", cascade="all, delete-orphan")
+    courses = db.relationship(
+        "Course",
+        secondary="enrollments",
+        primaryjoin="User.id == Enrollment.student_id",
+        secondaryjoin="Course.id == Enrollment.course_id",
+        viewonly=True
+    )
+
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
 

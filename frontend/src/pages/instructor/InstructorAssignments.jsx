@@ -2,17 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import api from "../../api/api";
-
 import Button from "../../components/ui/Button";
 import PageHeading from "../../components/ui/PageHeading";
-import ListCard from "../../components/ui/ListCard";
 import Card from "../../components/ui/Card";
+import { useLoading } from "../../context/LoadingContext";
 
 export default function InstructorAssignments() {
   const { courseId } = useParams;
+  const { showLoading, hideLoading } = useLoading();
   const [assignments, setAssignments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,30 +18,21 @@ export default function InstructorAssignments() {
   }, []);
 
   const fetchAssignments = async () => {
-    setLoading(true);
-    setError("");
+    showLoading("Fetching assignments . . .");
     try {
       // should be the assignments per course
       const res = await api.get(`/assignments/course/${courseId || 1}`);
       setAssignments(res.data.message || []);
     } catch (err) {
       console.error(err);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        setError("Unauthorized. Please log in again.");
-      } else {
-        setError("Failed to fetch assignments.");
-      }
     } finally {
-      setLoading(false);
+      hideLoading();
     }
   };
 
   return (
     <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-2">
       <PageHeading>Instructor Assignments</PageHeading>
-
-      {loading && <p className="text-stone-200">Loading assignments...</p>}
-      {/* {error && <p className="">{error}</p>} */}
 
       <div className="grid gap-4">
         {assignments.map((assignment) => (
@@ -77,7 +66,7 @@ export default function InstructorAssignments() {
         ))}
       </div>
 
-      {!loading && assignments.length === 0 && (
+      {assignments.length === 0 && (
         <p className="text-stone-300 mt-4">No assignments created yet.</p>
       )}
 

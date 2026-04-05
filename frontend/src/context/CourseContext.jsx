@@ -20,11 +20,10 @@ export function CourseProvider({ children }) {
   return (
     <CourseContext.Provider value={{ currentCourse, setCurrentCourse }}>
       {children}
-      {/* {console.log(currentCourse)} */}
     </CourseContext.Provider>
   );
 }
 
-export function useCourse() {
+export const useCourse = () => {
   return useContext(CourseContext);
-}
+};

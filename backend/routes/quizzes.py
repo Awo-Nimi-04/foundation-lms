@@ -14,7 +14,9 @@ from extensions import db
 from utils.decorators import instructor_required
 from utils.ai_helpers import clean_ai_json
 from utils.ai_helpers import serialize_question
+from utils.ai_helpers import extract_text_from_material
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from sqlalchemy import case
 
 quizzes_bp = Blueprint("quizzes", __name__, url_prefix="/quizzes")
 
@@ -22,6 +24,32 @@ gemini_client =  OpenAI(
     api_key=os.getenv("GEMINI_API_KEY"),
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
     )
+
+def normalize_choices(choices):
+    if isinstance(choices, str):
+        try:
+            return json.loads(choices)
+        except:
+            return []
+    return choices
+
+def normalize_question(text):
+    text = text.lower()
+    text = re.sub(r"[^\w\s]", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+def chunk_text(text, max_chars=2000, overlap=200):
+    chunks = []
+    start = 0
+
+    while start < len(text):
+        end = start + max_chars
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start += max_chars - overlap
+
+    return chunks
 
 @quizzes_bp.route("/courses/<int:course_id>/create_quiz", methods=["POST"])
 @instructor_required
@@ -72,147 +100,134 @@ def create_quiz(course_id):
 @quizzes_bp.route("/<int:quiz_id>/generate_questions", methods=["POST"])
 @instructor_required
 def generate_quiz_questions(quiz_id):
-
-    """
-    Generates a high-quality quiz based on course materials.
-    Each question includes:
-      - question_text
-      - multiple choice (if applicable)
-      - correct answer
-      - material_id
-    """
-
     identity = json.loads(get_jwt_identity())
     instructor_id = int(identity["id"])
 
-    quiz = Quiz.query.get(quiz_id)
-    if not quiz:
-        return jsonify({"error": "Quiz not found"}), 404
+    quiz = Quiz.query.get_or_404(quiz_id)
 
-    ## check if quiz already has questions
-    ## error should be ai generation only for blank/new quizzes
     course = Course.query.get(quiz.course_id)
     if course.instructor_id != instructor_id:
         return jsonify({"error": "Unauthorized"}), 403
 
     data = request.get_json()
-    num_questions = data.get("num_questions", 5)
 
-    materials = CourseMaterial.query.filter_by(course_id = quiz.course_id).all()
+    material_id = data.get("material_id")
+    num_questions = int(data.get("num_questions", 5))
 
-    material_lookup = {
-    m.source_name: m.id
-    for m in materials
-}
+    if not material_id:
+        return jsonify({"error": "material_id is required"}), 400
 
-    if not materials:
-        return jsonify({"error": "No course material found"}), 404
-    
-    formatted_materials = ""
-    for m in materials:
-        formatted_materials += f"\n--- {m.source_name} ---\n{m.content}\n"
+    material = CourseMaterial.query.filter_by(
+        id=material_id,
+        course_id=quiz.course_id
+    ).first()
 
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "You are an expert instructor generating quiz data for a software system.\n"
-                "Return ONLY valid JSON.\n"
-                "Do NOT include markdown, explanations, or text outside JSON.\n"
-                "Output must be a JSON array.\n\n"
+    if not material:
+        return jsonify({"error": "Invalid material"}), 400
 
-                "Each object MUST contain:\n"
-                "- question_text\n"
-                "- question_type (must be either 'short_answer' or 'multiple_choice')\n"
-                "- correct_answer\n"
-                "- material_id (must match the provided source_name exactly)\n\n"
+    text = getattr(material, "extracted_text", None)
+    if not text:
+        return jsonify({"error": "No extracted text found for material"}), 400
 
-                "If question_type is 'multiple_choice':\n"
-                "- Include 'choices' as an array of answer options\n"
-                "- The correct_answer must match one of the choices\n\n"
+    chunks = chunk_text(text)
 
-                "If question_type is 'short_answer':\n"
-                "- Do NOT include choices\n"
-            )
-        },
-        {
-            "role": "user",
-            "content": (
-                f"Materials:\n{formatted_materials}\n\n"
-                f"Generate {num_questions} quiz questions using the materials above.\n\n"
-                "Each question must include:\n"
-                "- question_text\n"
-                "- question_type\n"
-                "- correct_answer\n"
-                "- material_id\n"
-                "- choices (only if question_type is multiple_choice)\n"
-            )
-        }
-    ]
+    all_questions = []
+    seen_questions = set()
 
-    try:
-        response = gemini_client.chat.completions.create(
-            model="gemini-2.5-flash",
-            messages=messages,
-            temperature=0.6,
-            max_tokens=1500
-        )
+    for chunk in chunks:
 
-        quiz_json_text = quiz_json_text = clean_ai_json(
-            response.choices[0].message.content
-            )
+        if len(all_questions) >= num_questions:
+            break
 
-        # Remove code fences (```json ... ```)
-        quiz_json_text = re.sub(r"^```json", "", quiz_json_text, flags=re.I)
-        quiz_json_text = re.sub(r"```$", "", quiz_json_text)
+        remaining = num_questions - len(all_questions)
+        questions_per_call = min(5, remaining)
 
-        match = re.search(r"\[.*\]", quiz_json_text, re.DOTALL)
-        if match:
-            quiz_json_text = match.group(0)
-        else:
-            return jsonify({
-                "error": "Could not extract JSON from AI Output",
-                "raw_output": response.choices[0].message.content
-            }), 500
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are an expert instructor generating quiz questions.\n"
+                    "Return ONLY valid JSON array.\n\n"
+                    "Each object must include:\n"
+                    "- question_text\n"
+                    "- question_type (short_answer or multiple_choice)\n"
+                    "- correct_answer\n\n"
+                    "If multiple_choice:\n"
+                    "- include 'choices' array\n"
+                    "- correct_answer must match one choice\n"
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Material ID: {material.id}\n\n"
+                    f"{chunk}\n\n"
+                    f"Generate {questions_per_call} questions."
+                )
+            }
+        ]
 
         try:
-            quiz_questions = json.loads(quiz_json_text)
-        except json.JSONDecodeError:
-            return jsonify({
-                "error": "AI output could not be parsed as JSON",
-                "raw_output": response.choices[0].message.content
-            }), 500
-        
-        for q in quiz_questions:
-            source_name = q['material_id']
-            if source_name not in material_lookup:
-                return jsonify({
-                    "error": f"Unknown material: {source_name}"
-                }), 400
-
-            material_id = material_lookup[source_name]
-            question = QuizQuestion(
-                quiz_id = quiz.id,
-                material_id = material_id,
-                question_text = q['question_text'],
-                question_type = q['question_type'],
-                choices=json.dumps(q.get("choices")) if q.get("choices") else None,
-                correct_answer = q['correct_answer'],
-                is_ai_generated = True,
+            response = gemini_client.chat.completions.create(
+                model="gemini-2.5-flash",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1200
             )
-            db.session.add(question)
-        quiz.update_max_score()
-        db.session.commit()
 
-        return jsonify({
-            "quiz_id": quiz.id,
-            "title": quiz.title,
-            "questions": quiz_questions,
-            })
-    
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+            raw_output = response.choices[0].message.content
+            cleaned = clean_ai_json(raw_output)
 
+            match = re.search(r"\[.*\]", cleaned, re.DOTALL)
+            if not match:
+                continue
+
+            parsed = json.loads(match.group(0))
+
+            for q in parsed:
+
+                normalized = normalize_question(q["question_text"])
+
+                if normalized in seen_questions:
+                    continue
+
+                seen_questions.add(normalized)
+
+                all_questions.append({
+                    "material_id": material.id,
+                    "question_text": q["question_text"],
+                    "question_type": q["question_type"],
+                    "choices": normalize_choices(q.get("choices")),
+                    "correct_answer": q["correct_answer"]
+                })
+
+                if len(all_questions) >= num_questions:
+                    break
+
+        except Exception:
+            continue
+
+    if not all_questions:
+        return jsonify({"error": "No questions could be generated"}), 400
+
+    # Persist to DB
+    for q in all_questions:
+        db.session.add(QuizQuestion(
+            quiz_id=quiz.id,
+            material_id=q["material_id"],
+            question_text=q["question_text"],
+            question_type=q["question_type"],
+            choices=q["choices"],
+            correct_answer=q["correct_answer"],
+        ))
+
+    db.session.commit()
+
+    return jsonify({
+        "quiz_id": quiz.id,
+        "title": quiz.title,
+        "questions": all_questions
+    })
 
 @quizzes_bp.route("/<int:quiz_id>/start", methods=["POST"])
 @jwt_required()
@@ -356,10 +371,17 @@ def get_quizzes_for_course(course_id):
         if role == "student" and quiz.status != "published":
             continue
         if role == "student":
-            student_quiz_attempts.extend(QuizAttempt.query.filter_by(
-                student_id = id,
-                quiz_id = quiz.id
-                ).all())
+            student_quiz_attempts.extend(
+            QuizAttempt.query
+            .filter_by(student_id=id, quiz_id=quiz.id)
+            .order_by(
+                    case(
+                        (QuizAttempt.status == "in_progress", 1),
+                        else_=0
+                    ).desc(),
+                    QuizAttempt.submitted_at.desc()
+                ).all()
+            )
         quiz_list.append({
             "id": quiz.id,
             "title": quiz.title,
@@ -378,3 +400,34 @@ def get_quizzes_for_course(course_id):
         })
 
     return jsonify({"message": quiz_list}), 200
+
+@quizzes_bp.route("/quiz/<int:quiz_id>", methods=["DELETE"])
+@instructor_required
+def delete_quiz(quiz_id):
+    identity = json.loads(get_jwt_identity())
+    instructor_id = int(identity["id"])
+
+    quiz = Quiz.query.get_or_404(quiz_id)
+
+    if quiz.instructor_id != instructor_id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    try:
+        db.session.delete(quiz)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Quiz deleted successfully",
+            "quiz_id": quiz_id
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    
+
+# @quizzes_bp.route("/quiz/<int:quiz_id>/max_score", methods=["GET"])
+# @instructor_required
+# def get_quiz_max_score(quiz_id):
+#     quiz = Quiz.query.get_or_404(quiz_id)
+#     return jsonify({"max": quiz.get_max_score()})

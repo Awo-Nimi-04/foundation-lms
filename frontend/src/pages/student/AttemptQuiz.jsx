@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
 import Button from "../../components/ui/Button";
 import dayjs from "dayjs";
 import InnerCard from "../../components/ui/InnerCard";
 import Textarea from "../../components/ui/Textarea";
-import Input from "../../components/ui/Input";
 import Radio from "../../components/ui/Radio";
+import { useCourse } from "../../context/CourseContext";
 
 export default function AttemptQuiz() {
   const { quizId } = useParams();
+  const navigate = useNavigate();
+  const { currentCourse } = useCourse();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [attemptId, setAttemptId] = useState();
   const [answerList, setAnswerList] = useState([]);
@@ -58,6 +60,7 @@ export default function AttemptQuiz() {
     }
     try {
       const res = await api.post(`quizzes/${quizId}/start`);
+      // console.log(res.data);
       fetchQuestions();
       setHasStarted(true);
       setAttemptId(res.data.attempt_id);
@@ -68,7 +71,7 @@ export default function AttemptQuiz() {
 
   const handlePreviousQuestion = () => {
     const currentIndex =
-      currentQuestionIndex - 1 > 0 ? currentQuestionIndex : 0;
+      currentQuestionIndex - 1 > 0 ? currentQuestionIndex - 1 : 0;
     setCurrentQuestionIndex(currentIndex);
   };
 
@@ -103,6 +106,8 @@ export default function AttemptQuiz() {
       const res = await api.post(`/quiz_attempts/${attemptId}/submit`, {
         answers: answerList,
       });
+      alert("Quiz has been submitted!");
+      navigate(`/student/course/${currentCourse.id}/quizzes`);
     } catch (err) {
       console.log(err);
     }
@@ -158,34 +163,7 @@ export default function AttemptQuiz() {
               </div>
             )}
             {questions[currentQuestionIndex].question_type ===
-              "multiple_choice" &&
-            questions[currentQuestionIndex].is_ai_generated ? (
-              <div>
-                {JSON.parse(questions[currentQuestionIndex].choices)?.map(
-                  (choice, index) => {
-                    return (
-                      <Radio
-                        key={index}
-                        customStyles={"my-3 w-["}
-                        name={`question-${questions[currentQuestionIndex].id}`}
-                        value={choice}
-                        checked={
-                          answerList[currentQuestionIndex]?.answer === choice
-                        }
-                        onChange={(event) =>
-                          handleInputAnswer(
-                            event,
-                            questions[currentQuestionIndex].id,
-                          )
-                        }
-                      >
-                        {choice}
-                      </Radio>
-                    );
-                  },
-                )}
-              </div>
-            ) : (
+              "multiple_choice" && (
               <div>
                 {questions[currentQuestionIndex].choices?.map(
                   (choice, index) => {

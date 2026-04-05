@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useCourse } from "../../context/CourseContext";
 
 export default function NavBar() {
   const { logout, user } = useAuth();
+  const { setCurrentCourse } = useCourse();
 
   if (!user) return null;
 
@@ -21,7 +23,14 @@ export default function NavBar() {
       {/* Right */}
       <div className="w-1/3 flex justify-end items-center gap-4">
         <p>Logged in as: {user.email}</p>
-        <Link to="/" onClick={logout} className="text-blue-500 hover:underline">
+        <Link
+          to="/"
+          onClick={() => {
+            setCurrentCourse(null);
+            logout();
+          }}
+          className="text-blue-500 hover:underline"
+        >
           Logout
         </Link>
       </div>
