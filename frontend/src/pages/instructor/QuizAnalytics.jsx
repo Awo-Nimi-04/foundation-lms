@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Card from "../../components/ui/Card";
 import InnerCard from "../../components/ui/InnerCard";
 import StatItem from "../../components/ui/StatItem";
+import BackButton from "../../components/ui/BackButton";
 
 export default function QuizAnalytics() {
   const { quizId } = useParams();
@@ -32,7 +33,10 @@ export default function QuizAnalytics() {
     );
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
+    <div className="relative flex flex-col items-center justify-center min-h-screen">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       {/* {console.log(performance)} */}
       <Card
         title={`${performance.quiz_title} Analytics`}

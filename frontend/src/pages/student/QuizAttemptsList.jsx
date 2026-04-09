@@ -9,6 +9,7 @@ import Card from "../../components/ui/Card";
 import StatItem from "../../components/ui/StatItem";
 import Label from "../../components/ui/Label";
 import { useAuth } from "../../context/AuthContext";
+import BackButton from "../../components/ui/BackButton";
 
 export default function QuizAttemptsList() {
   const { quizId } = useParams();
@@ -38,9 +39,7 @@ export default function QuizAttemptsList() {
 
   const fetchResponses = async (attemptId) => {
     try {
-      const res = await api.get(
-        `/quiz_attempts/${attemptId}/responses`,
-      );
+      const res = await api.get(`/quiz_attempts/${attemptId}/responses`);
       // console.log(res.data.responses);
       setResponses(res.data.responses);
     } catch (err) {
@@ -54,7 +53,7 @@ export default function QuizAttemptsList() {
       const res = await api.get(
         `/quiz_attempts/${attemptId}/quiz_attempt_analytics`,
       );
-      // console.log(res.data);
+      // console.log(res.data.attempt_status);
       setSelectedAttempt(res.data);
     } catch (err) {
       console.error(err);
@@ -66,7 +65,10 @@ export default function QuizAttemptsList() {
   if (!quiz) return <p>Fetching Attempts...</p>;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
+    <div className="relative flex flex-col items-center justify-center min-h-screen">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       <PageHeading>{quiz.title}</PageHeading>
       {attempts.length > 0 && (
         <div>
@@ -80,7 +82,7 @@ export default function QuizAttemptsList() {
                 variant="secondary"
                 onClick={() => {
                   getAttemptAnalytics(attempt.id);
-                  fetchResponses(attempt.id)
+                  fetchResponses(attempt.id);
                 }}
               >
                 View
@@ -126,6 +128,19 @@ export default function QuizAttemptsList() {
                   : selectedAttempt.total_percent < 76
                     ? "yellow"
                     : "green"
+              }
+            />
+            <StatItem
+              stat={"Status"}
+              value={
+                selectedAttempt.attempt_status === "submitted"
+                  ? "Auto-graded"
+                  : "Graded"
+              }
+              color={
+                selectedAttempt.attempt_status === "submitted"
+                  ? "yellow"
+                  : "green"
               }
             />
           </div>

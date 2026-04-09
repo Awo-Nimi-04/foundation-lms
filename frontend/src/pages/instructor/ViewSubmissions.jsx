@@ -9,6 +9,7 @@ import StatItem from "../../components/ui/StatItem";
 import dayjs from "dayjs";
 import Highlight from "../../components/ui/Highlight";
 import { useLoading } from "../../context/LoadingContext";
+import BackButton from "../../components/ui/BackButton";
 
 export default function ViewSubmissions() {
   const { assignmentId } = useParams();
@@ -85,7 +86,10 @@ export default function ViewSubmissions() {
     );
 
   return (
-    <div className="flex flex-col justify-center items-center text-center min-h-screen">
+    <div className="relative flex flex-col justify-center items-center text-center min-h-screen">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       <Card
         title={`Student: ${submissions.students[currentIndex].email}`}
         footer={

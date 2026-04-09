@@ -21,8 +21,6 @@ cloudinary.config(
     api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
 
-
-
 @assignments_bp.route("/<int:assignment_id>", methods=["GET"])
 @jwt_required()
 def get_assignment_by_id(assignment_id):
@@ -309,7 +307,7 @@ def get_student_latest_submissions(assignment_id):
     # Main query: Enrollment + User + Latest Submission
     results = (
         db.session.query(Enrollment, User, AssignmentSubmission)
-        .join(User, Enrollment.student_id == User.id)  # ✅ join user
+        .join(User, Enrollment.student_id == User.id) 
         .outerjoin(
             latest_versions,
             Enrollment.student_id == latest_versions.c.student_id
@@ -332,6 +330,8 @@ def get_student_latest_submissions(assignment_id):
         "students": [
             {
                 "student_id": e.student_id,
+                "first_name": u.f_name,
+                "last_name": u.l_name,
                 "email": u.email,
                 "submission_id": s.id if s else None,
                 "version": s.version if s else None,

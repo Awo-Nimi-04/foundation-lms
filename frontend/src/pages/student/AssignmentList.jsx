@@ -6,6 +6,7 @@ import Button from "../../components/ui/Button";
 import PageHeading from "../../components/ui/PageHeading";
 import dayjs from "dayjs";
 import ListCard from "../../components/ui/ListCard";
+import BackButton from "../../components/ui/BackButton";
 
 export default function AssignmentList() {
   const { courseId } = useParams();
@@ -26,7 +27,10 @@ export default function AssignmentList() {
   };
 
   return (
-    <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-2">
+    <div className="relative text-center flex flex-col items-center justify-center min-h-screen space-y-2">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       <PageHeading>Your Assignments</PageHeading>
 
       {assignments.map((assignment) => (

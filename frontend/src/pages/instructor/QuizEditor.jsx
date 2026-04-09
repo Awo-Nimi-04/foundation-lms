@@ -9,6 +9,7 @@ import { useCourse } from "../../context/CourseContext";
 import Card from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
+import BackButton from "../../components/ui/BackButton";
 
 export default function QuizEditor() {
   const { quizId } = useParams();
@@ -129,7 +130,10 @@ export default function QuizEditor() {
   if (!quiz) return <p>Loading...</p>;
 
   return (
-    <div className="w-full flex flex-col space-y-5">
+    <div className="w-full flex flex-col space-y-5 relative">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       <div className="text-center mt-5">
         <PageHeading>Edit {quiz.title}</PageHeading>
         <div className="mx-auto p-3">

@@ -21,6 +21,9 @@ import CreateCourse from "./pages/instructor/CreateCourse";
 import CourseMaterialUpload from "./pages/instructor/CourseMaterialUpload";
 import StudentCourseDashboard from "./pages/student/StudentCourseDashboard";
 import EnrollCourses from "./pages/student/EnrollCourses";
+import CourseMaterials from "./pages/student/CourseMaterials";
+import Study from "./pages/student/Study";
+import EditProfile from "./pages/EditProfile";
 
 function App() {
   return (
@@ -29,6 +32,16 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         {/* ######### STUDENT ROUTES ######### */}
+
+        <Route
+          path="/student/edit_profile"
+          element={
+            <ProtectedRoute role={"student"}>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/student/all_courses"
           element={
@@ -91,7 +104,34 @@ function App() {
           }
         />
 
+        <Route
+          path="/student/:courseId/study"
+          element={
+            <ProtectedRoute role={"student"}>
+              <Study />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student/course/:courseId/files/"
+          element={
+            <ProtectedRoute role={"student"}>
+              <CourseMaterials />
+            </ProtectedRoute>
+          }
+        />
+
         {/* ######### INSTRUCTOR ROUTES ######### */}
+        <Route
+          path="/instructor/edit_profile"
+          element={
+            <ProtectedRoute role={"instructor"}>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/instructor/courses"
           element={

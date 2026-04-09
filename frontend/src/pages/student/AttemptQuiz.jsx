@@ -8,6 +8,14 @@ import Textarea from "../../components/ui/Textarea";
 import Radio from "../../components/ui/Radio";
 import { useCourse } from "../../context/CourseContext";
 
+const formatTime = (ms) => {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
 export default function AttemptQuiz() {
   const { quizId } = useParams();
   const navigate = useNavigate();
@@ -19,10 +27,29 @@ export default function AttemptQuiz() {
   const [isExpiredQuiz, setIsExpiredQuiz] = useState(false);
   const [questions, setQuestions] = useState([]);
   const [hasStarted, setHasStarted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [endTime, setEndTime] = useState(null);
 
   useEffect(() => {
     fetchQuiz();
   }, []);
+
+  useEffect(() => {
+    if (!endTime) return;
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, endTime - Date.now());
+      setTimeLeft(remaining);
+
+      if (remaining === 0) {
+        clearInterval(interval);
+        alert("Quiz time has elapsed."); // auto-submit or lock quiz
+        handleSubmitQuiz();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [endTime]);
 
   const isQuizExpired = (dueDate) => {
     if (!dueDate) return false;
@@ -47,6 +74,10 @@ export default function AttemptQuiz() {
     try {
       const res = await api.get(`/questions/${quizId}`);
       setQuestions(res.data.message);
+      const now = Date.now();
+      const end = now + quiz.time_limit * 60 * 1000;
+
+      setEndTime(end);
     } catch (err) {
       console.error(err);
     }
@@ -65,6 +96,9 @@ export default function AttemptQuiz() {
       setHasStarted(true);
       setAttemptId(res.data.attempt_id);
     } catch (err) {
+      const message = err.response?.data?.message || "Something went wrong";
+
+      alert(message);
       console.error(err);
     }
   };
@@ -122,10 +156,17 @@ export default function AttemptQuiz() {
           <h2 className="font-medium text-md text-yellow-400">
             Due: {dayjs(quiz.due_date).format("ddd D MMM, YYYY h:mm A")}
           </h2>
-          <h2 className="text-amber-600 font-semibold text-md">
-            Time Limit:{" "}
-            {quiz.time_limit ? `${quiz.time_limit} minutes` : "None"}
-          </h2>
+          {!timeLeft && !hasStarted && (
+            <h2 className="text-amber-600 font-semibold text-md">
+              Time Limit:{" "}
+              {quiz.time_limit ? `${quiz.time_limit} minutes` : "None"}
+            </h2>
+          )}
+          {timeLeft !== null && (
+            <div className="text-lg font-semibold text-amber-600">
+              Time Left: {formatTime(timeLeft)}
+            </div>
+          )}
         </div>
 
         {!hasStarted && !isExpiredQuiz && (

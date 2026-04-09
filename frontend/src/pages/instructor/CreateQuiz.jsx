@@ -6,6 +6,7 @@ import PageHeading from "../../components/ui/PageHeading";
 import Card from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
 import { useLoading } from "../../context/LoadingContext";
+import BackButton from "../../components/ui/BackButton";
 
 export default function CreateQuiz() {
   const navigate = useNavigate();
@@ -42,7 +43,10 @@ export default function CreateQuiz() {
   };
 
   return (
-    <div className="text-center flex flex-col justify-center min-h-screen space-y-4">
+    <div className="relative flex flex-col justify-center items-center text-center min-h-screen space-y-4">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       <PageHeading>Create A Quiz</PageHeading>
       <Card customStyles={"w-100 mx-auto"}>
         <form

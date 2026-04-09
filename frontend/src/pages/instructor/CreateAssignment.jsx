@@ -8,6 +8,7 @@ import Textarea from "../../components/ui/Textarea";
 import PageHeading from "../../components/ui/PageHeading";
 import { useLoading } from "../../context/LoadingContext";
 import { useCourse } from "../../context/CoursecONTEXT.JSX";
+import BackButton from "../../components/ui/BackButton";
 export default function CreateAssignment() {
   const navigate = useNavigate();
   const { currentCourse } = useCourse();
@@ -49,7 +50,10 @@ export default function CreateAssignment() {
     }
   };
   return (
-    <div className="text-center flex flex-col justify-center min-h-screen space-y-4">
+    <div className="relative flex flex-col justify-center items-center text-center min-h-screen">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       <PageHeading>Create An Assignment</PageHeading>
 
       <Card title="New Assignment" customStyles={"w-100 mx-auto"}>

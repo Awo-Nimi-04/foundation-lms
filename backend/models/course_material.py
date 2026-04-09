@@ -6,7 +6,8 @@ class CourseMaterial(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False)
     folder_id = db.Column(db.Integer, db.ForeignKey('material_folder.id'), nullable=True)
     file_name = db.Column(db.String(255))
-    file_url = db.Column(db.String(500)) 
+    file_url = db.Column(db.String(500))
+    download_url = db.Column(db.String(500))
     extracted_text = db.Column(db.Text) 
     created_at = db.Column(db.DateTime, default=datetime.now)
 

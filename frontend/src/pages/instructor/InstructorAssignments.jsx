@@ -6,6 +6,7 @@ import Button from "../../components/ui/Button";
 import PageHeading from "../../components/ui/PageHeading";
 import Card from "../../components/ui/Card";
 import { useLoading } from "../../context/LoadingContext";
+import BackButton from "../../components/ui/BackButton";
 
 export default function InstructorAssignments() {
   const { courseId } = useParams;
@@ -31,7 +32,10 @@ export default function InstructorAssignments() {
   };
 
   return (
-    <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-2">
+    <div className="relative flex flex-col justify-center items-center text-center min-h-screen space-y-2">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       <PageHeading>Instructor Assignments</PageHeading>
 
       <div className="grid gap-4">

@@ -174,10 +174,10 @@ def quiz_attempt_analytics(attempt_id):
 
     material_stats = defaultdict(lambda: {"score": 0, "max_score": 0})
 
-    # ✔ Use stored attempt score (source of truth)
+    # Use stored attempt score (source of truth)
     total_score = attempt.score
 
-    # ✔ derive max score from quiz definition
+    # derive max score from quiz definition
     quiz = Quiz.query.get(attempt.quiz_id)
     total_possible = sum(q.score_per_question or 0 for q in quiz.questions)
 
@@ -220,6 +220,7 @@ def quiz_attempt_analytics(attempt_id):
 
     return jsonify({
         "quiz_attempt_id": attempt_id,
+        "attempt_status": attempt.status,
         "quiz_id": attempt.quiz_id,
         "student_id": attempt.student_id,
         "total_score": total_score,
@@ -228,7 +229,7 @@ def quiz_attempt_analytics(attempt_id):
     })
 
 @quiz_attempts_bp.route("/<int:quiz_id>/instructor_analytics")
-@jwt_required()
+@instructor_required
 def instructor_quiz_analytics(quiz_id):
     identity = json.loads(get_jwt_identity())
     instructor_id = int(identity["id"])
@@ -340,9 +341,7 @@ def instructor_quiz_analytics(quiz_id):
         "material_analysis": material_analysis
     })
 
-@quiz_attempts_bp.route("/<int:attempt_id>/time_remaining")
-@jwt_required()
-def time_remaining(attempt_id):
+
     attempt = QuizAttempt.query.get_or_404(attempt_id)
     quiz = Quiz.query.get(attempt.quiz_id)
 
@@ -506,6 +505,8 @@ def get_student_quiz_responses(quiz_id, student_id):
         "quiz_title": quiz.title,
         "student_id": student_id,
         "student_email": user.email,
+        "first_name": user.f_name,
+        "last_name": user.l_name,
         "status": "not_submitted",
     })
 
@@ -541,6 +542,8 @@ def get_student_quiz_responses(quiz_id, student_id):
         "quiz_title": quiz.title,
         "student_id": student_id,
         "student_email": user.email,
+        "first_name": user.f_name,
+        "last_name": user.l_name,
         "attempt_id": attempt.id,
         "submitted_at": attempt.submitted_at,
         "responses": responses,

@@ -40,6 +40,18 @@ export default function SideBar() {
                 >
                   Quizzes
                 </Link>
+                <Link
+                  to={`/student/${currentCourse.id}/study`}
+                  className={`${navStyle}`}
+                >
+                  Study
+                </Link>
+                <Link
+                  to={`/student/course/${currentCourse.id}/files/`}
+                  className={`${navStyle}`}
+                >
+                  Files
+                </Link>
               </>
             )}
             <Link

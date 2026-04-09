@@ -16,7 +16,10 @@ export default function Login() {
   const handleLogin = async () => {
     showLoading("Logging you in");
     try {
-      const res = await api.post("/auth/login", { email, password });
+      const res = await api.post("/auth/login", {
+        email: email.trim(),
+        password: password.trim(),
+      });
       login(res.data.access_token, res.data.user);
       if (res.data.user.role === "student") {
         navigate("/student/courses");
@@ -37,7 +40,7 @@ export default function Login() {
         <h2 className="text-center text-4xl text-stone-200 mb-6">
           Welcome to Foundation
         </h2>
-        <div className="flex flex-col space-y-2 bg-stone-950 p-4 h-100 rounded-xl shadow-2xl justify-between">
+        <div className="flex flex-col space-y-2 bg-stone-950 p-4 h-100 rounded-xl shadow-2xl justify-between border border-stone-400">
           <div className="mt-8">
             <h2 className="text-stone-200 text-center shadow-xl text-2xl">
               Login

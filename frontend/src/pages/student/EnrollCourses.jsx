@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import CourseCard from "../../components/ui/CourseCard";
 import Label from "../../components/ui/Label";
 import dayjs from "dayjs";
+import BackButton from "../../components/ui/BackButton";
 
 const themes = ["red", "orange", "purple", "teal", "rose", "sky"];
 const getRandomColorName = () => {
@@ -48,7 +49,7 @@ export default function EnrollCourses() {
     showLoading("Enrolling . . .");
     try {
       const res = await api.post(`/courses/${courseId}/enroll`);
-    //   console.log(res.data);
+      //   console.log(res.data);
       fetchAllCourses();
     } catch (err) {
       console.error(err);
@@ -65,7 +66,10 @@ export default function EnrollCourses() {
     );
   }
   return (
-    <div className="flex flex-col items-center text-center min-h-screen mt-12">
+    <div className="relative flex flex-col items-center text-center min-h-screen mt-12">
+      <div className="absolute top-0 left-5">
+        <BackButton />
+      </div>
       <PageHeading>Courses</PageHeading>
       {courses.length <= 0 && (
         <p className="text-stone-300 text-md font-medium my-3">

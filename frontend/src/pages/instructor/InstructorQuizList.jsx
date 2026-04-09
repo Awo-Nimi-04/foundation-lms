@@ -6,6 +6,7 @@ import PageHeading from "../../components/ui/PageHeading";
 import ListCard from "../../components/ui/ListCard";
 import TabButton from "../../components/ui/TabButton";
 import { useLoading } from "../../context/LoadingContext";
+import BackButton from "../../components/ui/BackButton";
 
 export default function InstructorQuizList() {
   const { courseId } = useParams();
@@ -42,14 +43,17 @@ export default function InstructorQuizList() {
   const handleDeleteQuiz = async (quizId) => {
     try {
       await api.delete(`/quizzes/quiz/${quizId}`);
-      fetchQuizzes()
+      fetchQuizzes();
     } catch (err) {
       console.error(err);
     }
   };
 
   return (
-    <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-2">
+    <div className="relative text-center flex flex-col items-center justify-center min-h-screen space-y-2">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       <div className="">
         <PageHeading>Course Quizzes</PageHeading>
       </div>

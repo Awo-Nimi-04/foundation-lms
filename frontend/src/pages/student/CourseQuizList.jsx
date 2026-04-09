@@ -6,6 +6,7 @@ import PageHeading from "../../components/ui/PageHeading";
 import Label from "../../components/ui/Label";
 import ListCard from "../../components/ui/ListCard";
 import dayjs from "dayjs";
+import BackButton from "../../components/ui/BackButton";
 
 export default function CourseQuizList() {
   const { courseId } = useParams();
@@ -42,7 +43,10 @@ export default function CourseQuizList() {
   if (loading) return <p>Loading quizzes...</p>;
 
   return (
-    <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-2">
+    <div className="relative text-center flex flex-col items-center justify-center min-h-screen space-y-2">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       <PageHeading>Course Quizzes</PageHeading>
 
       {quizzes.length === 0 && <p className="text-stone-300">No quizzes yet</p>}

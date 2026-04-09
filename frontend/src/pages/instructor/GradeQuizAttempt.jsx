@@ -7,6 +7,7 @@ import Input from "../../components/ui/Input";
 import InnerCard from "../../components/ui/InnerCard";
 import Label from "../../components/ui/Label";
 import { useCourse } from "../../context/CourseContext";
+import BackButton from "../../components/ui/BackButton";
 
 export default function GradeQuizAttempt() {
   const { quizId } = useParams();
@@ -87,7 +88,7 @@ export default function GradeQuizAttempt() {
       );
       alert("Quiz attempt graded!");
       fetchQuizAttempt();
-      console.log(res.data);
+      // console.log(res.data);
     } catch (err) {
       console.log(err);
     }
@@ -112,7 +113,10 @@ export default function GradeQuizAttempt() {
     );
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen">
+    <div className="relative flex flex-col justify-center items-center min-h-screen">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       {/* {console.log(scores)} */}
       <Card
         title={`Grade ${attempt.quiz_title}`}
@@ -196,7 +200,11 @@ export default function GradeQuizAttempt() {
             </div>
           </InnerCard>
         ))}
-        {attempt.status === "not_submitted" && <h1 className="text-lg text-stone-400 font-semibold">This student has no attempt for this quiz</h1>}
+        {attempt.status === "not_submitted" && (
+          <h1 className="text-lg text-stone-400 font-semibold">
+            This student has no attempt for this quiz
+          </h1>
+        )}
       </Card>
     </div>
   );

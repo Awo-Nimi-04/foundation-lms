@@ -2,6 +2,7 @@ import cloudinary
 import cloudinary.uploader
 import json
 import os
+import uuid
 from datetime import datetime
 from dateutil.parser import isoparse
 from extensions import db
@@ -22,6 +23,12 @@ cloudinary.config(
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
+
+def build_download_url(file_url, filename):
+    return file_url.replace(
+        "/upload/",
+        f"/upload/fl_attachment:{filename}/"
+    )
 
 
 courses_bp = Blueprint("courses", __name__, url_prefix="/courses")
@@ -319,19 +326,29 @@ def upload_material(course_id):
         extracted_text = extract_text_from_file(file, file.filename)
 
         file.stream.seek(0)
+        original_filename = file.filename
+
+        unique_id = uuid.uuid4().hex
+        public_id = f"course_materials/{unique_id}"
 
         upload_result = cloudinary.uploader.upload(
             file,
             resource_type="auto",
-            folder="course_materials"
+            public_id=public_id
+        )
+
+        download_url = build_download_url(
+            upload_result["secure_url"],
+            original_filename
         )
 
         material = CourseMaterial(
             course_id=course_id,
             folder_id=folder_id if folder_id else None,
-            file_name=file.filename,
+            file_name=original_filename,
             file_url=upload_result["secure_url"],
-            extracted_text=extracted_text
+            extracted_text=extracted_text,
+            download_url=download_url,
         )
 
         db.session.add(material)

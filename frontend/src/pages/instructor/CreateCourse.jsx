@@ -7,6 +7,7 @@ import Button from "../../components/ui/Button";
 import { useLoading } from "../../context/LoadingContext";
 import api from "../../api/api";
 import { useNavigate } from "react-router-dom";
+import BackButton from "../../components/ui/BackButton";
 
 export default function CreateCourse() {
   const { showLoading, hideLoading } = useLoading();
@@ -46,7 +47,10 @@ export default function CreateCourse() {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center text-center min-h-screen">
+    <div className="relative flex flex-col justify-center items-center text-center min-h-screen">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       <PageHeading>Create A New Course</PageHeading>
       <Card title="New Assignment" customStyles={"w-100 mx-auto my-5"}>
         <form

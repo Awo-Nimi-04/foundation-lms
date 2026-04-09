@@ -4,9 +4,12 @@ from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    f_name = db.Column(db.String(50), nullable=False)
+    l_name = db.Column(db.String(75), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(50), nullable=False)
+    profile_photo_url = db.Column(db.String(500), nullable=True)
 
     enrollments = db.relationship("Enrollment", back_populates="student", cascade="all, delete-orphan")
     courses = db.relationship(

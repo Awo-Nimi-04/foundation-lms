@@ -9,6 +9,7 @@ import Highlight from "../../components/ui/Highlight";
 import TabButton from "../../components/ui/TabButton";
 import Textarea from "../../components/ui/Textarea";
 import { useCourse } from "../../context/CourseContext";
+import BackButton from "../../components/ui/BackButton";
 
 export default function SubmitAssignment() {
   const { assignmentId } = useParams();
@@ -61,7 +62,10 @@ export default function SubmitAssignment() {
   if (!assignment) return <p>Loading Assignment...</p>;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
+    <div className="relative flex flex-col items-center justify-center min-h-screen">
+      <div className="absolute top-10 left-5">
+        <BackButton />
+      </div>
       {/* {console.log(assignment)} */}
       <Card
         customStyles={"text-center text-stone-300 w-[50%]"}
@@ -137,9 +141,7 @@ export default function SubmitAssignment() {
               )}
               {assignment.latest_submission.feedback && (
                 <div className="text-left my-5 space-y-3">
-                  <p className="text-sm text-stone-300 font-medium">
-                   Feedback
-                  </p>
+                  <p className="text-sm text-stone-300 font-medium">Feedback</p>
                   <Highlight customStyles={"h-100"}>
                     {assignment.latest_submission.feedback}
                   </Highlight>

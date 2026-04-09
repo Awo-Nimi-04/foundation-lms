@@ -2,19 +2,18 @@ import re
 import os
 import json
 from openai import OpenAI
-from collections import defaultdict
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 from models.quiz import Quiz
 from models.course import Course
 from models.course_material import CourseMaterial
 from models.quiz import QuizQuestion
-from models.quiz_attempt import QuizAttempt, QuestionAttempt
+from models.quiz_attempt import QuizAttempt
 from extensions import db
 from utils.decorators import instructor_required
+from utils.ai_helpers import chunk_text
 from utils.ai_helpers import clean_ai_json
 from utils.ai_helpers import serialize_question
-from utils.ai_helpers import extract_text_from_material
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import case
 
@@ -39,18 +38,6 @@ def normalize_question(text):
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
-def chunk_text(text, max_chars=2000, overlap=200):
-    chunks = []
-    start = 0
-
-    while start < len(text):
-        end = start + max_chars
-        chunk = text[start:end]
-        chunks.append(chunk)
-        start += max_chars - overlap
-
-    return chunks
-
 @quizzes_bp.route("/courses/<int:course_id>/create_quiz", methods=["POST"])
 @instructor_required
 def create_quiz(course_id):
@@ -61,7 +48,7 @@ def create_quiz(course_id):
     data = request.get_json() or {}
     title = data.get("title")
     due_date_str = data.get("due_date")  # optional ISO string
-    time_limit = data.get("time_limit_minutes")
+    time_limit = data.get("time_limit")
 
     if not title:
         return jsonify({"error": "Title is required"}), 400
@@ -94,7 +81,7 @@ def create_quiz(course_id):
     return jsonify({
         "message": "Quiz created", 
         "quiz_id": quiz.id,
-        "time_limit_minutes": time_limit,
+        "time_limit": time_limit,
         }), 201
 
 @quizzes_bp.route("/<int:quiz_id>/generate_questions", methods=["POST"])
@@ -245,19 +232,6 @@ def start_quiz_attempt(quiz_id):
     if quiz.status != "published":
         return jsonify({"error": "Quiz not available"}), 403
     
-    # Temporary flow: cannot start another attempt until other attempts are graded, even if submitted
-    submitted_not_graded = QuizAttempt.query.filter_by(
-        quiz_id = quiz_id,
-        student_id = student_id,
-        status = "submitted",
-    ).all()
-
-    if submitted_not_graded:
-        return jsonify({
-            "attempt_id": submitted_not_graded.id,
-            "message": "Wait for instructor to grade latest attempt",
-        }), 500
-
     # Prevent multiple active attempts
     existing = QuizAttempt.query.filter_by(
         quiz_id=quiz_id,
@@ -270,6 +244,24 @@ def start_quiz_attempt(quiz_id):
             "attempt_id": existing.id,
             "message": "Resuming attempt"
         })
+    
+    # Temporary flow: cannot start another attempt until other attempts are graded, even if submitted
+    latest_submitted_attempt = (
+        QuizAttempt.query
+        .filter_by(
+            quiz_id=quiz_id,
+            student_id=student_id,
+            status="submitted",
+        )
+        .order_by(QuizAttempt.submitted_at.desc())  # or submitted_at
+        .first()
+    )
+
+    if latest_submitted_attempt and latest_submitted_attempt.status == "submitted":
+        return jsonify({
+            "attempt_id": latest_submitted_attempt.id,
+            "message": "Wait for instructor to grade latest attempt.",
+        }), 500
 
     attempt = QuizAttempt(
         quiz_id=quiz_id,

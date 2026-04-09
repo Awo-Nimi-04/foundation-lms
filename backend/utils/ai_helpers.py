@@ -22,24 +22,17 @@ def serialize_question(question, include_answers=False):
 
     return data
 
-def extract_text_from_material(material):
-    response = requests.get(material.file_url)
-    file_bytes = response.content
-    name = material.file_name.lower()
+def chunk_text(text, max_chars=2000, overlap=200):
+    chunks = []
+    start = 0
 
-    if name.endswith(".pdf"):
-        reader = PdfReader(io.BytesIO(file_bytes))
-        return "\n".join([p.extract_text() or "" for p in reader.pages])
+    while start < len(text):
+        end = start + max_chars
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start += max_chars - overlap
 
-    elif name.endswith(".txt"):
-        return file_bytes.decode("utf-8")
-
-    elif name.endswith(".docx"):
-        doc = Document(io.BytesIO(file_bytes))
-        return "\n".join([p.text for p in doc.paragraphs])
-
-    else:
-        return ""
+    return chunks
     
 def extract_text_from_file(file, filename):
     try:
