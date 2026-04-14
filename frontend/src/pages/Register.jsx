@@ -1,8 +1,6 @@
 import { useState } from "react";
 import api from "../api/api";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { useCourse } from "../context/CoursecONTEXT.JSX";
 import PageHeading from "../components/ui/PageHeading";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
@@ -25,12 +23,12 @@ export default function Register() {
       const res = await api.post("/auth/register", {
         fname: firstName.trim(),
         lname: lastName.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password: password.trim(),
         role: role.trim(),
       });
       hideLoading();
-      alert("Account created successfully!");
+      alert("Account created successfully! Check your email for a verification link!");
       navigate("/");
     } catch (err) {
       const message = err.response?.data?.error || "Failed to register user!";
@@ -43,13 +41,14 @@ export default function Register() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center">
-      <div className="flex items-center justify-between w-160">
+    <div className="relative flex flex-col items-center text-center justify-center min-h-screen">
+      <div className="absolute top-15 left-5">
         <BackButton />
-        <PageHeading>Create Your Foundation Account</PageHeading>
-        <div />
       </div>
-      <div className="flex flex-col bg-stone-950 p-6 w-160 rounded-xl shadow-2xl space-y-4 my-4 border border-stone-400">
+      <div className="w-80 md:w-full mt-5">
+        <PageHeading>Create Your Foundation Account</PageHeading>
+      </div>
+      <div className="flex flex-col bg-stone-950 p-6 lg:w-160 rounded-xl shadow-2xl space-y-4 my-4 border border-stone-400">
         <Input
           label={"First name"}
           placeholder="First name"

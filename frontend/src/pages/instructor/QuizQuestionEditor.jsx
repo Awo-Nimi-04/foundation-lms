@@ -85,7 +85,7 @@ export default function QuizQuestionEditor({
   return (
     <Card
       title={`${!isNew ? `Question ${index}` : "New Question"}`}
-      customStyles={"py-4 text-center h-[55vh]"}
+      customStyles={"py-4 text-center w-80 md:w-100 lg:w-160 my-8"}
       footer={
         <div className="flex items-center space-x-2 justify-center">
           <Button

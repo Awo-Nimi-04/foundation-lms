@@ -8,6 +8,8 @@ import InnerCard from "../../components/ui/InnerCard";
 import Label from "../../components/ui/Label";
 import { useCourse } from "../../context/CourseContext";
 import BackButton from "../../components/ui/BackButton";
+import PageHeading from "../../components/ui/PageHeading";
+import StatItem from "../../components/ui/StatItem";
 
 export default function GradeQuizAttempt() {
   const { quizId } = useParams();
@@ -107,53 +109,62 @@ export default function GradeQuizAttempt() {
 
   if (!attempt || attempt.responses?.length <= 0)
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen">
-        <p className="text-stone-300">There is no attempt to grade yet . . .</p>
+      <div className="relative flex flex-col items-center text-center min-h-screen px-5">
+        <div className="absolute top-0 left-5">
+          <BackButton />
+        </div>
+        <div className="w-60 md:w-full">
+          <PageHeading>Grade Quiz</PageHeading>
+        </div>
+        <p className="text-stone-400 italic mt-10">There is no attempt to grade</p>
       </div>
     );
 
   return (
-    <div className="relative flex flex-col justify-center items-center min-h-screen">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen px-5">
+      <div className="absolute top-0 left-5">
         <BackButton />
       </div>
-      {/* {console.log(scores)} */}
+      <div className="w-60 md:w-full">
+        <PageHeading>Grade Quiz</PageHeading>
+      </div>
+      {/* {console.log(attempt)} */}
       <Card
-        title={`Grade ${attempt.quiz_title}`}
+        headerDecor={"Student"}
+        title={`${attempt.first_name} ${attempt.last_name}`}
         footer={
           <div className="flex justify-center p-2 space-x-2">
             <Button
               variant="secondary"
               onClick={handlePreviousStudent}
               disabled={studentIndex === 0}
+              customStyles={"w-10 md:w-20"}
             >
-              Prev
+              <i className="bi bi-caret-left-fill"></i>
             </Button>
-            <Button onClick={handleGradeQuiz}>Grade</Button>
+            <Button onClick={handleGradeQuiz} customStyles={"w-20 md:w-40"}>
+              Grade
+            </Button>
             <Button
               variant="secondary"
               onClick={handleNextStudent}
               disabled={studentIndex === students.length - 1}
+              customStyles={"w-10 md:w-20"}
             >
-              Next
+              <i className="bi bi-caret-right-fill"></i>
             </Button>
           </div>
         }
-        customStyles={"text-center py-4 w-[80%] mx-auto"}
+        customStyles={"text-center py-4 w-[80%] mx-auto mt-10"}
       >
         {/* {console.log(studentIndex)} */}
         <div className="flex justify-between px-6">
-          <div className="flex space-x-2 items-center">
-            <p className="text-lg font-semibold text-stone-200">Student: </p>
-            <Label color="gray"> {attempt.student_email}</Label>
-          </div>
-          <div className="flex space-x-2 items-center">
-            <p className="text-lg font-semibold text-stone-200">Score: </p>
-            <Label color="orange" size="text-lg">
-              {attempt.status === "submitted" &&
-                `${Number(attempt.attempt_score)} / ${attempt.quiz_total_score}`}
-              {attempt.status === "not_submitted" && "N/A"}
-            </Label>
+          <div className="text-stone-200 w-full">
+            <StatItem
+              stat={"Score"}
+              color={"orange"}
+              value={`${attempt.attempt_score ? `${Number(attempt.attempt_score)} / ${attempt.quiz_total_score}` : "N/A"}`}
+            />
           </div>
         </div>
         {attempt.responses?.map((response, idx) => (
@@ -201,9 +212,16 @@ export default function GradeQuizAttempt() {
           </InnerCard>
         ))}
         {attempt.status === "not_submitted" && (
-          <h1 className="text-lg text-stone-400 font-semibold">
-            This student has no attempt for this quiz
-          </h1>
+          <>
+            <h1 className="text-lg text-stone-400 font-semibold">
+              This student has no attempt for this quiz
+            </h1>
+            <img
+              className="md:w-100 md:h-100 mx-auto p-2 rounded-full bg-blue-200 my-5"
+              src="https://static.vecteezy.com/system/resources/previews/055/476/494/non_2x/emoticon-crying-cartoon-character-with-sad-face-and-sad-expression-illustration-free-vector.jpg"
+              alt="Sad emoji tearing up"
+            />
+          </>
         )}
       </Card>
     </div>

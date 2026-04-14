@@ -1,5 +1,5 @@
 from extensions import db
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Assignment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -9,11 +9,14 @@ class Assignment(db.Model):
     description = db.Column(db.Text, nullable=True)
     reference_file_name = db.Column(db.String(255))
     reference_file_url = db.Column(db.String(500)) 
-    due_date = db.Column(db.DateTime, nullable=True)
+    due_date = db.Column(db.DateTime(timezone = True), nullable=True)
     max_score = db.Column(db.Float)
     allow_text_submission = db.Column(db.Boolean, default=True)
     allow_file_submission = db.Column(db.Boolean, default=True)
-    date_created = db.Column(db.DateTime, default=datetime.now())
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )
     submissions = db.relationship("AssignmentSubmission", backref="assignment", lazy=True)
 
 class AssignmentSubmission(db.Model):
@@ -25,7 +28,7 @@ class AssignmentSubmission(db.Model):
     submission_file_url = db.Column(db.String(500)) 
     score = db.Column(db.Float, nullable=True)
     feedback = db.Column(db.Text)
-    graded_at = db.Column(db.DateTime)
-    submitted_at = db.Column(db.DateTime, default=datetime.now())
+    graded_at = db.Column(db.DateTime(timezone=True))
+    submitted_at = db.Column(db.DateTime(timezone=True))
     version = db.Column(db.Integer, default=1)
     status = db.Column(db.String(20), default="submitted")

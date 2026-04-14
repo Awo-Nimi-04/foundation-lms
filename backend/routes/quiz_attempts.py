@@ -2,11 +2,10 @@ import json
 import re
 from collections import defaultdict
 from extensions import db
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.user import User
-from models.course import Course
 from models.course_material import CourseMaterial
 from models.enrollment import Enrollment
 from models.quiz_attempt import QuizAttempt, QuestionAttempt
@@ -80,7 +79,7 @@ def submit_attempt(attempt_id):
 
     attempt.score = total_score
     attempt.status = "submitted"
-    attempt.submitted_at = datetime.now()
+    attempt.submitted_at =  datetime.now(timezone.utc)
 
     db.session.commit()
 
@@ -103,12 +102,6 @@ def get_student_attempts_for_quiz(quiz_id):
         }), 403
     
     quiz = Quiz.query.get_or_404(quiz_id)
-    
-    # quiz_attempts = QuizAttempt.query.filter_by(
-    #     student_id = user_id,
-    #     quiz_id = quiz_id,
-    #     status = "graded",
-    # ).all()
 
     quiz_attempts= (
         QuizAttempt.query
@@ -393,7 +386,7 @@ def grade_quiz_attempt(attempt_id):
 
         qa.manually_graded = True
         qa.auto_graded = False
-        qa.graded_at = datetime.now()
+        qa.graded_at = datetime.now(timezone.utc)
 
     # Recompute from truth
     question_attempts = QuestionAttempt.query.filter_by(attempt_id=attempt_id).all()

@@ -18,7 +18,7 @@ export default function BackButton({ fallback = "/" }) {
       onClick={handleBack}
       className="p-1 bg-blue-500 text-white rounded-full w-10 h-10 text-center font-medium hover:bg-blue-800 cursor-pointer"
     >
-      <i class="bi bi-arrow-left" />
+      <i className="bi bi-arrow-left" />
     </button>
   );
 }

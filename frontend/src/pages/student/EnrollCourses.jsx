@@ -3,11 +3,9 @@ import PageHeading from "../../components/ui/PageHeading";
 import { useLoading } from "../../context/LoadingContext";
 import api from "../../api/api";
 import Button from "../../components/ui/Button";
-import { useNavigate } from "react-router-dom";
 import CourseCard from "../../components/ui/CourseCard";
 import Label from "../../components/ui/Label";
 import dayjs from "dayjs";
-import BackButton from "../../components/ui/BackButton";
 
 const themes = ["red", "orange", "purple", "teal", "rose", "sky"];
 const getRandomColorName = () => {
@@ -27,7 +25,6 @@ const getEnrollStatus = (course) => {
 export default function EnrollCourses() {
   const { showLoading, hideLoading } = useLoading();
   const [courses, setCourses] = useState();
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAllCourses();
@@ -66,18 +63,15 @@ export default function EnrollCourses() {
     );
   }
   return (
-    <div className="relative flex flex-col items-center text-center min-h-screen mt-12">
-      <div className="absolute top-0 left-5">
-        <BackButton />
-      </div>
-      <PageHeading>Courses</PageHeading>
+    <div className="flex flex-col items-center text-center min-h-screen">
+      <PageHeading>Enroll in a Course</PageHeading>
       {courses.length <= 0 && (
         <p className="text-stone-300 text-md font-medium my-3">
           There are no courses avaialble
         </p>
       )}
       {courses.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="p-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           {courses.map((course) => (
             <CourseCard
               color={getRandomColorName()}

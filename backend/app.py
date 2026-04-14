@@ -12,12 +12,17 @@ from utils.decorators import instructor_required
 from routes.assignments import assignments_bp
 from routes.auth import auth_bp
 from routes.courses import courses_bp
+from routes.discussions import discussions_bp
 from routes.study import study_bp
 from routes.quizzes import quizzes_bp
 from routes.quiz_questions import quiz_questions_bp
 from routes.quiz_attempts import quiz_attempts_bp
+from flask_migrate import Migrate
 
 app = Flask(__name__)
+
+migrate = Migrate(app, db)
+
 CORS(
     app,
     resources={r"/*": {"origins": "http://localhost:5173"}},
@@ -35,7 +40,7 @@ gemini_client =  OpenAI(
 
 #Database configuration
 db_path = os.path.join(os.path.dirname(__file__), "foundation_lms.db")
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}" 
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 #Initialize db with app
@@ -48,6 +53,7 @@ app.register_blueprint(quizzes_bp)
 app.register_blueprint(quiz_questions_bp)
 app.register_blueprint(quiz_attempts_bp)
 app.register_blueprint(assignments_bp)
+app.register_blueprint(discussions_bp)
 
 @app.route("/")
 def home():

@@ -1,5 +1,5 @@
 from extensions import db
-from datetime import datetime
+from datetime import datetime, timezone
 
 class QuizAttempt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -14,10 +14,10 @@ class QuizAttempt(db.Model):
         nullable=False
     )
     started_at = db.Column(
-        db.DateTime,
-        default=datetime.now()
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
     )
-    submitted_at = db.Column(db.DateTime)
+    submitted_at = db.Column(db.DateTime(timezone=True))
     score = db.Column(db.Float, default=0)
     status = db.Column(
         db.String(20),
@@ -38,4 +38,7 @@ class QuestionAttempt(db.Model):
     max_score = db.Column(db.Float, nullable=False)
     auto_graded = db.Column(db.Boolean, default=True)
     manually_graded = db.Column(db.Boolean, default=False)
-    date_taken = db.Column(db.DateTime, default=datetime.now())
+    date_taken = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )

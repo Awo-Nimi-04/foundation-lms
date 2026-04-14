@@ -1,4 +1,5 @@
 from extensions import db
+from datetime import datetime, timezone
 
 class Enrollment(db.Model):
     __tablename__ = "enrollments"
@@ -8,7 +9,10 @@ class Enrollment(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False)
 
-    enrolled_at = db.Column(db.DateTime, default=db.func.now())
+    enrolled_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )
 
     status = db.Column(db.String(20), default="active")
     final_grade = db.Column(db.Float, nullable=True)

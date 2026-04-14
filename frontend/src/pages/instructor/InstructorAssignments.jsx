@@ -9,7 +9,7 @@ import { useLoading } from "../../context/LoadingContext";
 import BackButton from "../../components/ui/BackButton";
 
 export default function InstructorAssignments() {
-  const { courseId } = useParams;
+  const { courseId } = useParams();
   const { showLoading, hideLoading } = useLoading();
   const [assignments, setAssignments] = useState([]);
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export default function InstructorAssignments() {
     showLoading("Fetching assignments . . .");
     try {
       // should be the assignments per course
-      const res = await api.get(`/assignments/course/${courseId || 1}`);
+      const res = await api.get(`/assignments/course/${courseId}`);
       setAssignments(res.data.message || []);
     } catch (err) {
       console.error(err);
@@ -32,24 +32,27 @@ export default function InstructorAssignments() {
   };
 
   return (
-    <div className="relative flex flex-col justify-center items-center text-center min-h-screen space-y-2">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen px-5">
+      <div className="absolute top-0 left-5">
         <BackButton />
       </div>
-      <PageHeading>Instructor Assignments</PageHeading>
+      <div className="w-60 md:w-full">
+        <PageHeading>Course Assignments</PageHeading>
+      </div>
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
         {assignments.map((assignment) => (
           <Card
-            customStyles={"py-6"}
+            customStyles={"py-6 mt-10"}
             key={assignment.id}
             title={assignment.title}
             footer={
               <Button
                 variant="secondary"
+                customStyles={"w-40"}
                 onClick={() =>
                   navigate(
-                    `/instructor/assignments/${assignment.id}/submissions`,
+                    `/instructor/course/${courseId}/assignments/${assignment.id}/submissions`,
                   )
                 }
               >
@@ -76,8 +79,10 @@ export default function InstructorAssignments() {
 
       <Button
         variant="primary"
-        onClick={() => navigate("/instructor/assignments/create")}
-        customStyles={"mx-auto"}
+        onClick={() =>
+          navigate(`/instructor/course/${courseId}/assignments/create`)
+        }
+        customStyles={"mx-auto w-60 mt-5"}
       >
         Create Assignment
       </Button>

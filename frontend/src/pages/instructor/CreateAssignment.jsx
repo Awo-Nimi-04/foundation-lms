@@ -35,7 +35,7 @@ export default function CreateAssignment() {
     showLoading("Creating Assignment...");
 
     try {
-      const res = await api.post("/assignments", formData, {
+      const res = await api.post(`/assignments/course/${currentCourse.id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -50,13 +50,15 @@ export default function CreateAssignment() {
     }
   };
   return (
-    <div className="relative flex flex-col justify-center items-center text-center min-h-screen">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen">
+      <div className="absolute top-5 left-5">
         <BackButton />
       </div>
-      <PageHeading>Create An Assignment</PageHeading>
+      <div className="w-60 md:w-full mt-5">
+        <PageHeading>Create Assignment</PageHeading>
+      </div>
 
-      <Card title="New Assignment" customStyles={"w-100 mx-auto"}>
+      <Card title="New Assignment" customStyles={"md:w-120 mx-auto mt-10"}>
         <form
           onSubmit={handleSubmit}
           className="p-4 text-left flex flex-col space-y-3"

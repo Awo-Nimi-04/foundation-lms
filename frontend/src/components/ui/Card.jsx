@@ -2,6 +2,7 @@ export default function Card({
   title,
   children,
   footer,
+  headerDecor,
   customStyles,
   headerStyles,
 }) {
@@ -13,6 +14,7 @@ export default function Card({
         <div
           className={`${headerStyles} text-xl text-stone-200 p-2 font-bold sticky top-0 bg-gray-700 z-10`}
         >
+          <h2 className="text-sm font-semibold text-yellow-600">{headerDecor}</h2>
           <h3>{title}</h3>
         </div>
       )}

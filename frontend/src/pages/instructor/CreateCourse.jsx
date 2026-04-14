@@ -16,7 +16,6 @@ export default function CreateCourse() {
   const [description, setDescription] = useState("");
   const [enrollmentStartDate, setEnrollmentStartDate] = useState("");
   const [enrollmentEndDate, setEnrollmentEndDate] = useState("");
-  const [color, setColor] = useState("#3b82f6");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,8 +27,8 @@ export default function CreateCourse() {
         {
           title: title,
           description: description,
-          enrollment_start: enrollmentStartDate,
-          enrollment_end: enrollmentEndDate,
+          enrollment_start: new Date(enrollmentStartDate).toISOString(),
+          enrollment_end: new Date(enrollmentEndDate).toISOString(),
         },
         {
           headers: {
@@ -47,12 +46,14 @@ export default function CreateCourse() {
   };
 
   return (
-    <div className="relative flex flex-col justify-center items-center text-center min-h-screen">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen">
+      <div className="absolute top-5 left-5">
         <BackButton />
       </div>
-      <PageHeading>Create A New Course</PageHeading>
-      <Card title="New Assignment" customStyles={"w-100 mx-auto my-5"}>
+      <div className="w-60 md:w-full mt-5">
+        <PageHeading>Create A New Course</PageHeading>
+      </div>
+      <Card title="New Course" customStyles={"md:w-100 mx-auto mt-10"}>
         <form
           onSubmit={handleSubmit}
           className="p-4 text-left flex flex-col space-y-3"

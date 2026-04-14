@@ -65,18 +65,22 @@ export default function QuizAttemptsList() {
   if (!quiz) return <p>Fetching Attempts...</p>;
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen p-5 mb-5">
+      <div className="absolute top-0 left-5">
         <BackButton />
       </div>
-      <PageHeading>{quiz.title}</PageHeading>
+      <div className="w-60 md:w-full">
+        <PageHeading>Attempt Analytics</PageHeading>
+      </div>
+
+      <p className="text-stone-200 mt-5 text-xl font-semibold">{quiz.title}</p>
       {attempts.length > 0 && (
-        <div>
+        <div className="w-full">
           {attempts.map((attempt, idx) => (
             <ListCard
               key={attempt.id}
               title={`Attempt ${idx + 1}`}
-              customStyles={`w-100 my-3 ${selectedAttempt?.quiz_attempt_id === attempt.id ? "border border-stone-200" : ""}`}
+              customStyles={`w-[100%] md:w-[80%] mx-auto my-3 ${selectedAttempt?.quiz_attempt_id === attempt.id ? "border border-stone-200" : ""}`}
             >
               <Button
                 variant="secondary"
@@ -105,7 +109,7 @@ export default function QuizAttemptsList() {
       {selectedAttempt && (
         <Card
           title={"Attempt Analytics"}
-          customStyles={"text-center text-stone-200 py-4 my-8 w-100"}
+          customStyles={"text-center text-stone-200 py-4 my-8 w-[100%]  md:w-[80%]"}
         >
           <div className="px-4 space-y-1 mb-2">
             <StatItem
@@ -151,6 +155,7 @@ export default function QuizAttemptsList() {
                   <StatItem
                     stat={"Material"}
                     value={material.material_source_name}
+                    labelStyling={"max-w-40 line-clamp-1 md:max-w-80"}
                   />
                   <StatItem
                     stat={"Mastery %"}
@@ -193,7 +198,7 @@ export default function QuizAttemptsList() {
       {selectedAttempt && responses.length > 0 && (
         <Card
           title={`Your Answers`}
-          customStyles={"text-center py-4 w-[80%] mx-auto"}
+          customStyles={"text-center py-4 w-[80%] mx-auto w-[100%] md:w-[80%]"}
         >
           {responses?.map((response, idx) => (
             <InnerCard

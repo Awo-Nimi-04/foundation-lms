@@ -7,12 +7,16 @@ import Button from "../components/ui/Button";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import { useLoading } from "../context/LoadingContext";
+import OTPInput from "../components/ui/OTPInput";
 
 export default function EditProfile() {
   const { user, login } = useAuth();
   const { showLoading, hideLoading } = useLoading();
   const [preview, setPreview] = useState(user.photo || null);
   const [file, setFile] = useState(null);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const [passwords, setPasswords] = useState({
     current: "",
@@ -30,44 +34,122 @@ export default function EditProfile() {
   };
 
   // Handle password input
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = (e, name) => {
     setPasswords({
       ...passwords,
-      [e.target.name]: e.target.value,
+      [name]: e.target.value,
     });
   };
 
-  const handleUpdateProfile = async () => {
+  const handleUpdateProfilePhoto = async () => {
+    if (!file) return;
     const formData = new FormData();
 
     if (file) formData.append("file", file);
-    if (passwords.current)
-      formData.append("current_password", passwords.current);
-    if (passwords.new) formData.append("new_password", passwords.new);
     showLoading("Updating your profile . . .");
     try {
-      const res = await api.patch("/auth/edit_user", formData, {
+      const res = await api.patch("/auth/update_user_photo", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
       setFile(null);
       login(res.data.access_token, res.data.user);
-      hideLoading()
-      alert("Profile update successfully!")
+      hideLoading();
+      alert("Profile update successfully!");
     } catch (err) {
       console.error(err);
       hideLoading();
     }
   };
 
+  const handleUpdatePassword = async () => {
+    if (!passwords.current || !passwords.new) return;
+    const formData = new FormData();
+
+    if (passwords.current)
+      formData.append("current_password", passwords.current);
+    if (passwords.new) formData.append("new_password", passwords.new);
+    showLoading("Updating your profile . . .");
+    try {
+      const res = await api.patch("/auth/update_password", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setPasswords({
+        current: "",
+        new: "",
+        confirm: "",
+      });
+      hideLoading();
+      alert("Password changed successfully!");
+    } catch (err) {
+      console.error(err);
+      hideLoading();
+    }
+  };
+
+  const handleRequestOtp = async () => {
+    try {
+
+      await api.get("/auth/send-otp");
+      setShowOtpInput(true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      const res = await api.post("/auth/verify-otp", { otp });
+      setOtpVerified(true);
+      setShowOtpInput(false);
+    } catch (err) {
+      console.error(err);
+      alert("OTP verification failed!")
+    }
+  };
+
   return (
-    <div className="relative flex flex-col min-h-screen items-center text-stone-300">
-      {/* {console.log(user)} */}
-      <div className="absolute left-10 top-5">
+    <div
+      className={`relative flex flex-col min-h-screen items-center text-stone-300`}
+    >
+      {showOtpInput && (
+        <div className="absolute z-50 bg-black/50 w-full h-full p-3">
+          <div className="mx-auto bg-gray-700 p-5 flex flex-col justify-between items-center md:w-100 md:h-100 w-[80%] h-[40%] rounded-lg shadow-xl">
+            <div>
+              <p className="text-4xl text-stone-200 p-2 font-bold text-center">
+                Enter OTP
+              </p>
+              <p className="italic text-yellow-400 text-lg text-center">
+                Please enter the one-time passcode sent to your phone via SMS
+              </p>
+            </div>
+            <OTPInput onChange={(value) => setOtp(value)} />
+            <div className="space-x-2">
+              <Button
+                customStyles={"w-20"}
+                variant="secondary"
+                onClick={handleVerifyOtp}
+              >
+                Verify
+              </Button>
+              <Button
+                customStyles={"w-20"}
+                variant="tertiary"
+                onClick={() => setShowOtpInput(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="absolute left-5 top-5">
         <BackButton />
       </div>
-      <div className="mt-12">
+      <div className="mt-5">
         <PageHeading>Edit Profile</PageHeading>
       </div>
 
@@ -105,7 +187,7 @@ export default function EditProfile() {
           {file && (
             <div className="w-full flex space-x-2 items-center justify-between">
               <div className="space-x-2">
-                <Button variant="secondary" onClick={handleUpdateProfile}>
+                <Button variant="secondary" onClick={handleUpdateProfilePhoto}>
                   Upload File
                 </Button>
                 <Button
@@ -124,45 +206,55 @@ export default function EditProfile() {
       </Card>
 
       {/* ================= PASSWORD CHANGE ================= */}
-      <Card
-        title={"Change Password"}
-        customStyles={"py-4 w-80 text-center"}
-        footer={
-          <Button
-            customStyles={"w-full"}
-            variant="secondary"
-            onClick={handleUpdateProfile}
-          >
-            Update Password
-          </Button>
-        }
-      >
-        <div className="space-y-3">
-          <Input
-            type="password"
-            // name="current"
-            placeholder="Current Password"
-            value={passwords.current}
-            onChange={handlePasswordChange}
-          />
+      {!otpVerified && (
+        <Button
+          customStyles={"w-80"}
+          variant="primary"
+          onClick={handleRequestOtp}
+        >
+          Change Password
+        </Button>
+      )}
+      {otpVerified && (
+        <Card
+          title={"Change Password"}
+          customStyles={"py-4 w-80 text-center"}
+          footer={
+            <div className="px-2">
+              <Button
+                customStyles={"w-full"}
+                variant="secondary"
+                onClick={handleUpdatePassword}
+              >
+                Confirm Password Change
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-3 p-2">
+            <Input
+              type="password"
+              placeholder="Current Password"
+              value={passwords.current}
+              onChange={(e) => handlePasswordChange(e, "current")}
+            />
 
-          <Input
-            type="password"
-            // name="new"
-            placeholder="New Password"
-            value={passwords.new}
-            onChange={handlePasswordChange}
-          />
+            <Input
+              type="password"
+              placeholder="New Password"
+              value={passwords.new}
+              onChange={(e) => handlePasswordChange(e, "new")}
+            />
 
-          <Input
-            type="password"
-            // name="confirm"
-            placeholder="Confirm New Password"
-            value={passwords.confirm}
-            onChange={handlePasswordChange}
-          />
-        </div>
-      </Card>
+            <Input
+              type="password"
+              placeholder="Confirm New Password"
+              value={passwords.confirm}
+              onChange={(e) => handlePasswordChange(e, "confirm")}
+            />
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

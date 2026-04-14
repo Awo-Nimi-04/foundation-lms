@@ -10,8 +10,11 @@ import TabButton from "../../components/ui/TabButton";
 import Textarea from "../../components/ui/Textarea";
 import { useCourse } from "../../context/CourseContext";
 import BackButton from "../../components/ui/BackButton";
+import PageHeading from "../../components/ui/PageHeading";
+import { useLoading } from "../../context/LoadingContext";
 
 export default function SubmitAssignment() {
+  const { showLoading, hideLoading } = useLoading();
   const { assignmentId } = useParams();
   const navigate = useNavigate();
   const { currentCourse } = useCourse();
@@ -37,6 +40,7 @@ export default function SubmitAssignment() {
   };
 
   const handleSubmit = async () => {
+    showLoading("Submitting assignment");
     try {
       if (text) {
         await api.post(`/assignments/${assignmentId}/submit`, {
@@ -52,6 +56,8 @@ export default function SubmitAssignment() {
       navigate(`/student/course/${currentCourse.id}/assignments`);
     } catch (err) {
       alert("Submission failed!");
+    } finally {
+      hideLoading();
     }
   };
 
@@ -62,13 +68,16 @@ export default function SubmitAssignment() {
   if (!assignment) return <p>Loading Assignment...</p>;
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen px-5">
+      <div className="absolute top-0 left-5">
         <BackButton />
+      </div>
+      <div className="w-60 md:w-full">
+        <PageHeading>Submit Assignment</PageHeading>
       </div>
       {/* {console.log(assignment)} */}
       <Card
-        customStyles={"text-center text-stone-300 w-[50%]"}
+        customStyles={"text-center text-stone-300 w-[100%] md:w-[80%] my-10"}
         title={assignment.title}
         footer={
           !canSubmit && (
@@ -171,7 +180,7 @@ export default function SubmitAssignment() {
         </div>
 
         {canSubmit && (
-          <div className="flex flex-col justify-center items-center my-3 space-y-5">
+          <div className="flex flex-col justify-center items-center my-3 space-y-5 px-2">
             <div className="flex flex-col items-center">
               <h2 className="text-lg font-semibold">Submit Assignment</h2>
               <TabButton
@@ -182,14 +191,14 @@ export default function SubmitAssignment() {
             </div>
 
             {submitType === "Text" && (
-              <div className="text-left">
+              <div className="text-left w-full">
                 {assignment.allow_text && (
                   <Textarea
                     label={"Text Submission"}
                     placeholder="Enter text submission..."
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    customStyles={"w-60 lg:w-100"}
+                    customStyles={"w-full"}
                   />
                 )}
                 {!assignment.allow_text && (
@@ -198,9 +207,10 @@ export default function SubmitAssignment() {
               </div>
             )}
             {submitType === "File" && (
-              <div>
+              <div className="w-full">
                 {assignment.allow_file && (
-                  <div className="w-100">
+                  <div className="w-[100%] md:w-100 mx-auto">
+                    <p className="text-stone-300 text-left text-sm font-medium">File Submission</p>
                     {!file && (
                       <label className="flex items-center p-2 border border-stone-600 rounded-lg bg-stone-900 cursor-pointer">
                         <span className="text-stone-300 p-2">Upload file</span>
@@ -248,11 +258,3 @@ export default function SubmitAssignment() {
     </div>
   );
 }
-
-// "id": assignment.id,
-// "title": assignment.title,
-// "description": assignment.description,
-// "due_date": assignment.due_date.isoformat() if assignment.due_date else None,
-// "max_score": assignment.max_score,
-// "allow_text": assignment.allow_text_submission,
-// "allow_file": assignment.allow_file_submission,

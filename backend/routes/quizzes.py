@@ -2,7 +2,7 @@ import re
 import os
 import json
 from openai import OpenAI
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from models.quiz import Quiz
 from models.course import Course
@@ -72,7 +72,7 @@ def create_quiz(course_id):
         course_id=course_id,
         instructor_id=course.instructor_id,
         due_date=due_date,
-        time_limit_minutes=time_limit,
+        time_limit_minutes=time_limit if time_limit else None,
     )
 
     db.session.add(quiz)
@@ -266,7 +266,7 @@ def start_quiz_attempt(quiz_id):
     attempt = QuizAttempt(
         quiz_id=quiz_id,
         student_id=student_id,
-        started_at = datetime.now()
+        started_at = datetime.now(timezone.utc)
     )
 
     db.session.add(attempt)
@@ -417,9 +417,3 @@ def delete_quiz(quiz_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
     
-
-# @quizzes_bp.route("/quiz/<int:quiz_id>/max_score", methods=["GET"])
-# @instructor_required
-# def get_quiz_max_score(quiz_id):
-#     quiz = Quiz.query.get_or_404(quiz_id)
-#     return jsonify({"max": quiz.get_max_score()})

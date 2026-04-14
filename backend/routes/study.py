@@ -74,7 +74,7 @@ def study(course_id):
         material_id=material.id,
         role="user",
         content=question,
-        created_at=datetime.now()
+        created_at=datetime.now(timezone.utc)
     )
 
     db.session.add(user_msg)
@@ -195,7 +195,7 @@ def study(course_id):
             role="ai",
             content=answer,
             difficulty=difficulty,
-            created_at=datetime.now()
+            created_at=datetime.now(timezone.utc)
         )
 
         db.session.add(ai_msg)

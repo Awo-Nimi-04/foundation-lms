@@ -3,6 +3,8 @@ import api from "../../api/api";
 import { useCourse } from "../../context/CourseContext";
 import Button from "../../components/ui/Button";
 import { useLoading } from "../../context/LoadingContext";
+import BackButton from "../../components/ui/BackButton";
+import PageHeading from "../../components/ui/PageHeading";
 
 export default function CourseMaterialUpload() {
   const { currentCourse } = useCourse();
@@ -109,8 +111,13 @@ export default function CourseMaterialUpload() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      {/* Materials list */}
+    <div className="relative max-w-3xl mx-auto p-6 space-y-6">
+      <div className="absolute top-6 left-1">
+        <BackButton />
+      </div>
+      <div className="text-center">
+        <PageHeading>Course Materials</PageHeading>
+      </div>
       <div className="space-y-3">
         <h2 className="text-2xl font-bold text-stone-200">Folders</h2>
         {folders.length === 0 && (
@@ -127,10 +134,10 @@ export default function CourseMaterialUpload() {
                   <div className="flex space-x-2 items-center">
                     <div className="flex flex-col space-y-1">
                       <label className="inline-block">
-                        <span className="px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer hover:bg-blue-500 transition">
-                          Upload to Folder
-                        </span>
-
+                        <div className=" w-10 md:w-40 p-2 bg-blue-600 text-white text-center rounded-lg cursor-pointer hover:bg-blue-500 transition">
+                          <i className="md:hidden bi bi-cloud-upload-fill"></i>
+                          <p className="hidden md:block">Upload to Folder</p>
+                        </div>
                         <input
                           type="file"
                           className="hidden"
@@ -144,8 +151,10 @@ export default function CourseMaterialUpload() {
                         handleDeleteFolder(folder.id);
                       }}
                       className="text-red-500 cursor-pointer"
+                      customStyles={"w-10 md:w-32"}
                     >
-                      Delete Folder
+                      <i className="md:hidden bi bi-trash-fill"></i>
+                      <p className="hidden md:block">Delete Folder</p>
                     </Button>
                   </div>
                 )}
@@ -233,17 +242,24 @@ export default function CourseMaterialUpload() {
               {file.name}
             </p>
             <div className="space-x-2">
-              <Button variant="secondary" onClick={handleUpload}>
-                Upload File
+              <Button
+                variant="secondary"
+                onClick={handleUpload}
+                customStyles={"w-10 md:w-32"}
+              >
+                <i className="md:hidden bi bi-cloud-upload-fill"></i>
+                <p className="hidden md:block">Upload File</p>
               </Button>
               <Button
                 variant="tertiary"
                 onClick={() => {
                   setFile(null);
                 }}
+                customStyles={"w-10 md:w-20"}
                 className="text-red-500 cursor-pointer"
               >
-                Cancel
+                <i className="md:hidden bi bi-x-lg"></i>
+                <p className="hidden md:block">Cancel</p>
               </Button>
             </div>
           </div>
@@ -269,7 +285,9 @@ function MaterialRow({ material, refresh }) {
 
   return (
     <div className="flex justify-between items-center py-2">
-      <p className="text-stone-200">{material.file_name}</p>
+      <p className="line-clamp-1 max-w-40 lg:max-w-80 text-stone-200">
+        {material.file_name}
+      </p>
 
       <div className="space-x-3">
         <a href={material.file_url} target="_blank" className="text-blue-400">

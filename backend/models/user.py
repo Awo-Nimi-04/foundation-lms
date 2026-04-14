@@ -10,6 +10,11 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(50), nullable=False)
     profile_photo_url = db.Column(db.String(500), nullable=True)
+    is_verified = db.Column(db.Boolean, default=False)
+    verification_token = db.Column(db.String(255), nullable=True)
+    verification_token_expires = db.Column(db.DateTime(timezone=True), nullable=True)
+    otp_hash = db.Column(db.String(128), nullable=True)
+    otp_expires = db.Column(db.DateTime(timezone=True), nullable=True)
 
     enrollments = db.relationship("Enrollment", back_populates="student", cascade="all, delete-orphan")
     courses = db.relationship(

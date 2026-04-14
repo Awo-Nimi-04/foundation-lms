@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import api from "../../api/api";
 import { useCourse } from "../../context/CourseContext";
 import { useLoading } from "../../context/LoadingContext";
+import BackButton from "../../components/ui/BackButton";
+import PageHeading from "../../components/ui/PageHeading";
 
 export default function CourseMaterials() {
   const { currentCourse } = useCourse();
@@ -30,7 +32,13 @@ export default function CourseMaterials() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
+    <div className="relative max-w-3xl mx-auto p-6 space-y-6">
+      <div className="absolute top-6 left-1">
+        <BackButton />
+      </div>
+      <div className="text-center">
+        <PageHeading>Course Materials</PageHeading>
+      </div>
       <div className="space-y-3">
         <h2 className="text-2xl font-bold text-stone-200">Folders</h2>
         {folders.length === 0 && (
@@ -60,7 +68,9 @@ export default function CourseMaterials() {
 function MaterialRow({ material }) {
   return (
     <div className="flex justify-between items-center py-2">
-      <p className="text-stone-200">{material.file_name}</p>
+      <p className="line-clamp-1 max-w-40 md:max-w-100 text-stone-200">
+        {material.file_name}
+      </p>
 
       <div className="space-x-3">
         <a

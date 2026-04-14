@@ -50,18 +50,21 @@ export default function InstructorQuizList() {
   };
 
   return (
-    <div className="relative text-center flex flex-col items-center justify-center min-h-screen space-y-2">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen p-3">
+      <div className="absolute top-5 left-5">
         <BackButton />
       </div>
-      <div className="">
-        <PageHeading>Course Quizzes</PageHeading>
+      <div className="w-60 md:w-full my-2">
+        <PageHeading>Quizzes</PageHeading>
       </div>
-      <TabButton
-        options={["Published", "Draft"]}
-        selectedOption={quizStatusFilter}
-        onChange={handleQuizFilter}
-      />
+      <div className="my-3">
+        <TabButton
+          options={["Published", "Draft"]}
+          selectedOption={quizStatusFilter}
+          onChange={handleQuizFilter}
+        />
+      </div>
+
       {filteredQuizzes.length === 0 && (
         <p className="text-stone-400 text-center mt-6">
           No {quizStatusFilter.toLowerCase()} quizzes found . . .
@@ -69,44 +72,62 @@ export default function InstructorQuizList() {
       )}
       {filteredQuizzes.length > 0 &&
         filteredQuizzes.map((quiz) => (
-          <ListCard key={quiz.id} title={quiz.title} customStyles="w-[80%]">
+          <ListCard
+            key={quiz.id}
+            title={quiz.title}
+            customStyles="w-[100%] lg:w-[80%]"
+          >
             <div>
               {quizStatusFilter === "Draft" && (
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
                   <Button
+                    customStyles={"w-10 md:w-20"}
                     variant="secondary"
                     onClick={() =>
-                      navigate(`/instructor/quizzes/${quiz.id}/quiz_editor`)
+                      navigate(
+                        `/instructor/course/${courseId}/quizzes/${quiz.id}/quiz_editor`,
+                      )
                     }
                   >
-                    Edit
+                    <i className="md:hidden bi bi-pencil-fill"></i>
+                    <p className="hidden md:block">Edit</p>
                   </Button>
-                  <button
-                    className="font-medium text-red-500 bg-transparent border-4 px-2 py-1 rounded-lg cursor-pointer hover:text-stone-300 hover:border-red-800 hover:bg-red-800"
+                  <Button
+                    variant="danger"
                     onClick={() => handleDeleteQuiz(quiz.id)}
+                    customStyles={"w-10 md:w-20"}
                   >
-                    Delete
-                  </button>
+                    <i className="md:hidden bi bi-trash3-fill"></i>
+                    <p className="hidden md:block">Delete</p>
+                  </Button>
                 </div>
               )}
 
               {quizStatusFilter === "Published" && (
                 <div className="flex space-x-1">
                   <Button
+                    customStyles={"w-10 md:w-20"}
                     variant="tertiary"
                     onClick={() =>
-                      navigate(`/instructor/quizzes/${quiz.id}/analytics`)
+                      navigate(
+                        `/instructor/course/${courseId}/quizzes/${quiz.id}/analytics`,
+                      )
                     }
                   >
-                    Analytics
+                    <i className="md:hidden bi bi-bar-chart-fill"></i>
+                    <p className="hidden md:block font-medium">Analytics</p>
                   </Button>
                   <Button
+                    customStyles={"w-10 md:w-20"}
                     variant="secondary"
                     onClick={() =>
-                      navigate(`/instructor/quizzes/${quiz.id}/grade`)
+                      navigate(
+                        `/instructor/course/${courseId}/quizzes/${quiz.id}/grade`,
+                      )
                     }
                   >
-                    Grade
+                    <i className="md:hidden bi bi-check-square-fill"></i>
+                    <p className="hidden md:block font-medium">Grade</p>
                   </Button>
                 </div>
               )}
@@ -116,9 +137,9 @@ export default function InstructorQuizList() {
       <Button
         variant="primary"
         onClick={() =>
-          navigate(`/instructor/courses/${courseId}/quizzes/create`)
+          navigate(`/instructor/course/${courseId}/quizzes/create`)
         }
-        customStyles={"mt-4"}
+        customStyles={"mt-4 w-40 md:w-60"}
       >
         Create Quiz
       </Button>

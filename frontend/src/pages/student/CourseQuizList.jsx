@@ -43,11 +43,13 @@ export default function CourseQuizList() {
   if (loading) return <p>Loading quizzes...</p>;
 
   return (
-    <div className="relative text-center flex flex-col items-center justify-center min-h-screen space-y-2">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen px-5">
+      <div className="absolute top-0 left-5">
         <BackButton />
       </div>
-      <PageHeading>Course Quizzes</PageHeading>
+      <div className="w-60 md:w-full">
+        <PageHeading>Course Quizzes</PageHeading>
+      </div>
 
       {quizzes.length === 0 && <p className="text-stone-300">No quizzes yet</p>}
 
@@ -56,35 +58,74 @@ export default function CourseQuizList() {
           key={quiz.id}
           title={quiz.title}
           subtitle={
-            <p className="text-sm text-yellow-500 font-bold mb-2">
-              Due: {dayjs(quiz.due_date).format("ddd D MMM, YYYY h:mm A")}
-            </p>
+            <>
+              <p className="hidden md:block text-sm text-yellow-500 font-bold mb-2">
+                Due: {dayjs(quiz.due_date).format("ddd D MMM, YYYY h:mm A")}
+              </p>
+              <p className="md:hidden text-sm text-yellow-500 font-bold mb-2">
+                Due: {dayjs(quiz.due_date).format("ddd D MMM, YYYY")}
+              </p>
+            </>
           }
-          customStyles={"w-140"}
+          customStyles={"w-[100%] mt-10"}
         >
-          <div className="space-x-3">
+          <div className="flex space-x-3">
             {quiz.quiz_attempts.length > 0 && (
               <Button
                 variant="tertiary"
                 onClick={() => {
-                  navigate(`/student/quizzes/${quiz.id}/quiz_attempts`);
+                  navigate(
+                    `/student/course/${courseId}/quizzes/${quiz.id}/quiz_attempts`,
+                  );
                 }}
+                customStyles={"w-10 md:w-32"}
               >
-                View Analytics
+                <p className="hidden md:block">View Analytics</p>
+                <i className="md:hidden bi bi-bar-chart-fill"></i>
               </Button>
             )}
             {!isQuizExpired(quiz.due_date) && (
               <Button
                 variant="secondary"
                 onClick={() =>
-                  navigate(`/student/quizzes/${quiz.id}/attempt_quiz`)
+                  navigate(
+                    `/student/course/${courseId}/quizzes/${quiz.id}/attempt_quiz`,
+                  )
                 }
+                customStyles={"w-10 md:w-20"}
               >
-                {quiz.quiz_attempts.length === 0
-                  ? "Start"
-                  : quiz.quiz_attempts[0].status === "in_progress"
-                    ? "Resume"
-                    : "Retry"}
+                <p className="hidden md:block">
+                  {quiz.quiz_attempts.length === 0
+                    ? "Start"
+                    : quiz.quiz_attempts[0].status === "in_progress"
+                      ? "Resume"
+                      : "Retry"}
+                </p>
+                <svg
+                className="md:hidden"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  stroke="#ffffff"
+                >
+                  <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
+                  <g
+                    id="SVGRepo_tracerCarrier"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  ></g>
+                  <g id="SVGRepo_iconCarrier">
+                    {" "}
+                    <path
+                      d="M10 3V6H4L4 10H10L10 13L11 13L16 8L11 3L10 3Z"
+                      fill="#ffffff"
+                    ></path>{" "}
+                    <path
+                      d="M0 2L1.38281e-06 14H2L2 2L0 2Z"
+                      fill="#ffffff"
+                    ></path>{" "}
+                  </g>
+                </svg>
               </Button>
             )}
             {isQuizExpired(quiz.due_date) && <Label color="red">Expired</Label>}

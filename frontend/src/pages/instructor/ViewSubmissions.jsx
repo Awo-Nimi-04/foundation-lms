@@ -10,6 +10,7 @@ import dayjs from "dayjs";
 import Highlight from "../../components/ui/Highlight";
 import { useLoading } from "../../context/LoadingContext";
 import BackButton from "../../components/ui/BackButton";
+import PageHeading from "../../components/ui/PageHeading";
 
 export default function ViewSubmissions() {
   const { assignmentId } = useParams();
@@ -78,31 +79,47 @@ export default function ViewSubmissions() {
     }
   };
 
-  if (!submissions)
+  if (!submissions || submissions.students.length === 0)
     return (
-      <div className="flex flex-col justify-center items-center text-center min-h-screen">
-        <p className="text-stone-300">No submissions available.</p>
+      <div className="relative flex flex-col items-center text-center min-h-screen">
+        <div className="absolute top-5 left-5">
+          <BackButton />
+        </div>
+        <div className="w-60 md:w-full mt-5">
+          <PageHeading>Student Submissions</PageHeading>
+        </div>
+        <p className="text-stone-400 mt-10 italic">No submissions available</p>
       </div>
     );
 
   return (
-    <div className="relative flex flex-col justify-center items-center text-center min-h-screen">
-      <div className="absolute top-10 left-5">
+    <div className=" flex flex-col items-center text-center min-h-screen">
+      <div className="absolute top-5 left-5">
         <BackButton />
       </div>
+      <div className="w-60 md:w-full mt-5">
+        <PageHeading>Student Submissions</PageHeading>
+      </div>
+      {/* {console.log(submissions)} */}
       <Card
-        title={`Student: ${submissions.students[currentIndex].email}`}
+        headerDecor={"Student"}
+        title={`${submissions.students[currentIndex].first_name} ${submissions.students[currentIndex].last_name}`}
         footer={
           <div className="p-3 space-x-3">
             <Button
               variant="secondary"
               onClick={handlePrevious}
               disabled={currentIndex === 0}
+              customStyles={"md:w-20 w-10"}
             >
-              Previous
+              <i className="bi bi-caret-left-fill"></i>
             </Button>
 
-            <Button variant="primary" onClick={handleGrade}>
+            <Button
+              variant="primary"
+              onClick={handleGrade}
+              customStyles={"md:w-40 w-20"}
+            >
               Grade
             </Button>
 
@@ -110,12 +127,13 @@ export default function ViewSubmissions() {
               variant="secondary"
               onClick={handleNext}
               disabled={currentIndex + 1 >= submissions.students.length}
+              customStyles={"md:w-20 w-10"}
             >
-              Next
+              <i className="bi bi-caret-right-fill"></i>
             </Button>
           </div>
         }
-        customStyles={"w-[50%] py-4 mt-4"}
+        customStyles={"max-w-[80%] py-4 mt-4"}
       >
         <div className="text-stone-200 space-y-2 p-2">
           <StatItem

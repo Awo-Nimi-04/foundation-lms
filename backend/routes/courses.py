@@ -3,7 +3,7 @@ import cloudinary.uploader
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from dateutil.parser import isoparse
 from extensions import db
 from flask import Blueprint, request, jsonify
@@ -66,8 +66,9 @@ def create_course():
     if enrollment_start >= enrollment_end:
         return jsonify({"error": "Enrollment start must be before end"}), 400
 
+    print(enrollment_end, enrollment_end.tzinfo)
     # Optional but recommended
-    if enrollment_end <= datetime.now():
+    if enrollment_end <=  datetime.now(timezone.utc):
         return jsonify({"error": "Enrollment end must be in the future"}), 400
 
     course = Course(
@@ -91,6 +92,32 @@ def create_course():
             "enrollment_open": course.is_enrollment_open()
         }
     }), 201
+
+@courses_bp.route("/<int:course_id>", methods=["GET"])
+@jwt_required()
+def get_course_by_id(course_id):
+    identity = json.loads(get_jwt_identity())
+    user_id = int(identity["id"])
+    role = identity["role"]
+
+    course = Course.query.get_or_404(course_id)
+
+    if role == "student":
+        enrolled = Enrollment.query.filter_by(
+            student_id = user_id,
+            course_id =course_id
+        ).first()
+
+        if not enrolled:
+            return jsonify({"error": "Unauthroized. Student does not have acess to this course"}), 403
+
+    if role == "instructor" and course.instructor_id != user_id:
+        return jsonify({"error": "Unauthroized. Instructor does not have acess to this course"}), 403
+
+    return jsonify({
+        "id": course.id,
+        "title": course.title,
+    })
 
 @courses_bp.route("/", methods=["GET"])
 @jwt_required()
@@ -554,7 +581,7 @@ def update_enrollment_period(course_id):
         return jsonify({"error": "Start must be before end"}), 400
 
     # Optional: enforce future windows only
-    if new_end < datetime.now():
+    if new_end < datetime.now(timezone.utc):
         return jsonify({"error": "End date must be in the future"}), 400
 
     course.enrollment_start = new_start

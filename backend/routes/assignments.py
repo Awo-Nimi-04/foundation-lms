@@ -1,10 +1,9 @@
 import cloudinary
 import json
 import os
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from datetime import datetime
-from werkzeug.utils import secure_filename
+from datetime import datetime, timezone
 from extensions import db
 from models.assignment import Assignment, AssignmentSubmission
 from models.course import Course
@@ -88,9 +87,9 @@ def view_all_my_assignments():
         ]
     })
 
-@assignments_bp.route("", methods=["POST"])
+@assignments_bp.route("/course/<int:course_id>", methods=["POST"])
 @instructor_required
-def create_assignment():
+def create_assignment(course_id):
 
     identity = json.loads(get_jwt_identity())
     instructor_id = int(identity["id"])
@@ -115,7 +114,7 @@ def create_assignment():
             file_name = file.filename
 
         assignment = Assignment(
-            course_id=int(data["course_id"]),
+            course_id=course_id,
             instructor_id=instructor_id,
             title=data["title"],
             description=data.get("description"),
@@ -206,7 +205,7 @@ def submit_assignment(assignment_id):
         submission_text = text_submission,
         submission_file = file_name,
         submission_file_url = file_url,
-        submitted_at = datetime.now(),
+        submitted_at = datetime.now(timezone.utc),
         status = "submitted",
         version = next_version,
     )
@@ -271,7 +270,7 @@ def grade_submission(submission_id):
    
     submission.score = data["score"]
     submission.feedback = data.get("feedback")
-    submission.graded_at = datetime.now()
+    submission.graded_at =  datetime.now(timezone.utc)
     submission.status = "submitted"
 
     db.session.commit()

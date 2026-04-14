@@ -1,5 +1,5 @@
 from extensions import db
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import func
 
 class Quiz(db.Model):
@@ -11,8 +11,11 @@ class Quiz(db.Model):
     max_score = db.Column(db.Float, default=10.0)
     created_with_ai = db.Column(db.Boolean, default=False)
     status = db.Column(db.String(20), default="draft")
-    date_created = db.Column(db.DateTime, default=datetime.now())
-    due_date = db.Column(db.DateTime, nullable=True)
+    date_created = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )
+    due_date = db.Column(db.DateTime(timezone=True), nullable=True)
     time_limit_minutes = db.Column(db.Integer, nullable=True)
     ####Questionsssss
     questions = db.relationship(

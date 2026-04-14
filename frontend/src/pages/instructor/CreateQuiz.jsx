@@ -34,7 +34,9 @@ export default function CreateQuiz() {
           },
         },
       );
-      navigate(`/instructor/quizzes/${res.data.quiz_id}/quiz_editor`);
+      navigate(
+        `/instructor/course/${courseId}/quizzes/${res.data.quiz_id}/quiz_editor`,
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -43,12 +45,14 @@ export default function CreateQuiz() {
   };
 
   return (
-    <div className="relative flex flex-col justify-center items-center text-center min-h-screen space-y-4">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen px-5">
+      <div className="absolute top-0 left-5">
         <BackButton />
       </div>
-      <PageHeading>Create A Quiz</PageHeading>
-      <Card customStyles={"w-100 mx-auto"}>
+      <div className="w-60 md:w-full">
+        <PageHeading>Create Quiz</PageHeading>
+      </div>
+      <Card customStyles={"md:w-100 mx-auto mt-10"}>
         <form
           onSubmit={handleSubmit}
           className="p-4 text-left flex flex-col space-y-3"

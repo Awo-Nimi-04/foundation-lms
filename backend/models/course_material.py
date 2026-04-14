@@ -1,5 +1,5 @@
 from extensions import db
-from datetime import datetime
+from datetime import datetime, timezone
 
 class CourseMaterial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -9,7 +9,10 @@ class CourseMaterial(db.Model):
     file_url = db.Column(db.String(500))
     download_url = db.Column(db.String(500))
     extracted_text = db.Column(db.Text) 
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    ccreated_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )
 
     def __repr__(self):
         return f"<CourseMaterial {self.file_name}>"

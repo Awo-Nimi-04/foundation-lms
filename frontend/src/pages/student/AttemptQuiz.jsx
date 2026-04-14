@@ -7,6 +7,8 @@ import InnerCard from "../../components/ui/InnerCard";
 import Textarea from "../../components/ui/Textarea";
 import Radio from "../../components/ui/Radio";
 import { useCourse } from "../../context/CourseContext";
+import PageHeading from "../../components/ui/PageHeading";
+import BackButton from "../../components/ui/BackButton";
 
 const formatTime = (ms) => {
   const totalSeconds = Math.floor(ms / 1000);
@@ -43,7 +45,7 @@ export default function AttemptQuiz() {
 
       if (remaining === 0) {
         clearInterval(interval);
-        alert("Quiz time has elapsed."); // auto-submit or lock quiz
+        alert("Quiz time has elapsed.");
         handleSubmitQuiz();
       }
     }, 1000);
@@ -149,8 +151,11 @@ export default function AttemptQuiz() {
   if (!quiz) return <p>Quiz Loading...</p>;
 
   return (
-    <div className="text-center flex flex-col items-center mt-12 min-h-screen space-y-2">
-      <div className="bg-gray-700 text-stone-200 px-4 py-6 rounded-lg space-y-4">
+    <div className="flex flex-col items-center text-center min-h-screen px-5">
+      <div className="w-60 md:w-full">
+        <PageHeading>Start Quiz</PageHeading>
+      </div>
+      <div className="bg-gray-700 text-stone-200 px-4 py-6 rounded-lg space-y-4 mt-10">
         <h1 className="text-4xl font-bold">{quiz.title}</h1>
         <div>
           <h2 className="font-medium text-md text-yellow-400">
@@ -184,7 +189,7 @@ export default function AttemptQuiz() {
       {hasStarted && questions.length > 0 && (
         <InnerCard
           title={`Question ${currentQuestionIndex + 1}`}
-          customStyles={"w-[50%] mt-6"}
+          customStyles={"w-[100%] md:w-[80%] mt-6"}
         >
           <div className="mt-5 mb-8">
             <p className="text-lg font-semibold">
@@ -237,18 +242,24 @@ export default function AttemptQuiz() {
               variant="secondary"
               onClick={handlePreviousQuestion}
               disabled={currentQuestionIndex === 0}
+              customStyles={"w-10 md:w-20"}
             >
-              Previous
+              <i className="bi bi-caret-left-fill"></i>
             </Button>
-            <Button variant="primary" onClick={handleSubmitQuiz}>
+            <Button
+              variant="primary"
+              onClick={handleSubmitQuiz}
+              customStyles={"w-20 md:w-40"}
+            >
               Submit
             </Button>
             <Button
               variant="secondary"
               onClick={handleNextQuestion}
               disabled={currentQuestionIndex + 1 === quiz.questions.length}
+              customStyles={"w-10 md:w-20"}
             >
-              Next
+              <i className="bi bi-caret-right-fill"></i>
             </Button>
           </div>
         </InnerCard>

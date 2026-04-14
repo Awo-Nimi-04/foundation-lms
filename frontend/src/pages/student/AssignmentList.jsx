@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../api/api";
 import { useNavigate, useParams } from "react-router-dom";
-import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import PageHeading from "../../components/ui/PageHeading";
 import dayjs from "dayjs";
@@ -27,27 +26,38 @@ export default function AssignmentList() {
   };
 
   return (
-    <div className="relative text-center flex flex-col items-center justify-center min-h-screen space-y-2">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen px-5">
+      <div className="absolute top-0 left-5">
         <BackButton />
       </div>
-      <PageHeading>Your Assignments</PageHeading>
+      <div className="w-60 md:w-full">
+        <PageHeading>Course Assignments</PageHeading>
+      </div>
 
       {assignments.map((assignment) => (
         <ListCard
-          customStyles={"w-120"}
+          customStyles="w-[100%] lg:w-[80%] mt-10"
           key={assignment.id}
           title={assignment.title}
           subtitle={
-            <p className="text-sm text-yellow-500 font-bold mb-2">
-              Due: {dayjs(assignment.due_date).format("ddd D MMM, YYYY h:mm A")}
-            </p>
+            <>
+              <p className="hidden md:block text-sm text-yellow-500 font-bold mb-2">
+                Due:{" "}
+                {dayjs(assignment.due_date).format("ddd D MMM, YYYY h:mm A")}
+              </p>
+              <p className="md:hidden text-sm text-yellow-500 font-bold mb-2">
+                Due:{" "}
+                {dayjs(assignment.due_date).format("ddd D MMM, YYYY")}
+              </p>
+            </>
           }
         >
           <Button
             variant="secondary"
             onClick={() =>
-              navigate(`/student/assignments/${assignment.id}/submit`)
+              navigate(
+                `/student/course/${courseId}/assignments/${assignment.id}/submit`,
+              )
             }
           >
             Submit

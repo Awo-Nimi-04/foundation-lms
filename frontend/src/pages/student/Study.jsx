@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import api from "../../api/api";
 import Select from "../../components/ui/Select";
 import BackButton from "../../components/ui/BackButton";
+import PageHeading from "../../components/ui/PageHeading";
 
 const Study = () => {
   const { courseId } = useParams();
@@ -49,7 +50,8 @@ const Study = () => {
         material_id: selectedMaterial,
       });
       // console.log(res.data);
-      console.log(res.data.engagement_score);
+      setMastery(res.data.engagement_score);
+
       setMessages((prev) => [
         ...prev,
         {
@@ -81,20 +83,20 @@ const Study = () => {
   };
 
   return (
-    <div className="relative flex flex-col min-h-screen max-w-4xl mx-auto p-4">
-      <div className="absolute top-10 left-5">
+    <div className="relative flex flex-col items-center text-center min-h-screen px-5 pb-5 mt-5">
+      <div className="absolute top-0 left-5">
         <BackButton />
       </div>
+      <div className="w-60 md:w-full">
+        <PageHeading>Study Material</PageHeading>
+      </div>
       <div className="mx-auto mb-4">
-        <h1 className="text-center text-2xl font-bold mb-2 text-stone-200">
-          Study Material
-        </h1>
         <p className="text-center text-gray-300">
           Select any course material and ask questions about it
         </p>
         <div className="my-5">
           <Select
-            customStyles={"w-100"}
+            customStyles={"md:w-100"}
             value={selectedMaterial}
             label={"Select a material"}
             onChange={(e) => {
@@ -113,57 +115,63 @@ const Study = () => {
 
       {selectedMaterial && (
         <>
-          <div className="flex-1 border-2 border-stone-300 bg-stone-950 rounded-lg p-4">
-            <div className="flex-1 overflow-y-auto rounded-lg p-4 space-y-4">
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${
-                    msg.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div className="max-w-md">
-                    {/* LABEL */}
-                    <p
-                      className={`text-xs mb-1 ${
-                        msg.role === "user"
-                          ? "text-right text-blue-300"
-                          : "text-left text-gray-400"
-                      }`}
-                    >
-                      {msg.role === "user" ? "You" : "Tutor"}
-                    </p>
+          {messages.length > 0 && (
+            <div className="border-2 border-stone-300 bg-stone-950 rounded-lg p-4 w-[100%] md:w-[80%]">
+              <div className="flex-1 overflow-y-auto rounded-lg p-4 space-y-4">
+                {messages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${
+                      msg.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div className="max-w-md">
+                      {/* LABEL */}
+                      <p
+                        className={`text-xs mb-1 ${
+                          msg.role === "user"
+                            ? "text-right text-blue-300"
+                            : "text-left text-gray-400"
+                        }`}
+                      >
+                        {msg.role === "user" ? "You" : "Tutor"}
+                      </p>
 
-                    {/* MESSAGE BUBBLE */}
-                    <div
-                      className={`p-3 rounded-xl ${
-                        msg.role === "user"
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-100 text-gray-900"
-                      }`}
-                    >
-                      <p>{msg.content}</p>
+                      {/* MESSAGE BUBBLE */}
+                      <div
+                        className={`p-3 rounded-xl ${
+                          msg.role === "user"
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-100 text-gray-900"
+                        }`}
+                      >
+                        <p
+                          className={`${msg.role === "user" ? "text-right" : "text-left"}`}
+                        >
+                          {msg.content}
+                        </p>
 
-                      {msg.role === "ai" && msg.difficulty && (
-                        <div className="flex items-center space-x-2 mt-2">
-                          <p className="text-stone-500 text-sm font-medium">
-                            Question difficulty:
-                          </p>
-                          <span
-                            className={`text-xs ${msg.difficulty === "easy" ? "bg-green-100 text-green-700" : msg.difficulty === "medium" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}  px-2 py-1 rounded-lg`}
-                          >
-                            {msg.difficulty}
-                          </span>
-                        </div>
-                      )}
+                        {msg.role === "ai" && msg.difficulty && (
+                          <div className="flex items-center space-x-2 mt-2">
+                            <p className="text-stone-500 text-sm font-medium">
+                              Question difficulty:
+                            </p>
+                            <span
+                              className={`text-xs ${msg.difficulty === "easy" ? "bg-green-100 text-green-700" : msg.difficulty === "medium" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}  px-2 py-1 rounded-lg`}
+                            >
+                              {msg.difficulty}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="mt-4">
+          <div className="mt-4 w-[100%] md:w-[80%]">
             {loading && <p className="text-gray-400 italic">Thinking...</p>}
             <div className="flex gap-2">
               <input
@@ -177,7 +185,7 @@ const Study = () => {
                 onClick={handleSend}
                 className="bg-blue-500 text-white px-4 rounded-lg"
               >
-                Send
+                <i className="bi bi-send-fill"></i>
               </button>
             </div>
             <div ref={bottomRef} />

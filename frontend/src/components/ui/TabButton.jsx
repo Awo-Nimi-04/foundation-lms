@@ -8,7 +8,7 @@ export default function TabButton({ options, selectedOption, onChange }) {
           <button
             key={option}
             onClick={() => onChange(option)}
-            className={`px-4 py-2 rounded-md text-sm transition ${
+            className={`px-4 py-2 rounded-md text-sm transition cursor-pointer ${
               isActive
                 ? "bg-indigo-500 text-white"
                 : "text-stone-300 hover:bg-stone-800"

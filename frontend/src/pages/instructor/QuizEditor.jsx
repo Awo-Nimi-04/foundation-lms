@@ -131,7 +131,7 @@ export default function QuizEditor() {
 
   return (
     <div className="w-full flex flex-col space-y-5 relative">
-      <div className="absolute top-10 left-5">
+      <div className="absolute top-5 left-5">
         <BackButton />
       </div>
       <div className="text-center mt-5">
@@ -145,7 +145,7 @@ export default function QuizEditor() {
                 customStyles={"w-40"}
                 disabled={showGenerateForm}
               >
-                {showAddForm ? "Cancel Question" : "Add Question"}
+                {showAddForm ? "Cancel" : "Add Question"}
               </Button>
               <Button
                 variant={!showGenerateForm ? "secondary" : "tertiary"}
@@ -161,10 +161,10 @@ export default function QuizEditor() {
         {showGenerateForm && (
           <Card
             title={"AI Question Generator"}
-            customStyles={"w-100 mx-auto"}
+            customStyles={"w-80 md:w-100 mx-auto"}
             footer={
               <div className="p-2 mb-2">
-                <Button variant="secondary" onClick={generateAIQuizQuestions}>
+                <Button customStyles={"w-40"} variant="secondary" onClick={generateAIQuizQuestions}>
                   Generate
                 </Button>
               </div>
@@ -197,11 +197,11 @@ export default function QuizEditor() {
         )}
       </div>
       {questions.length <= 0 && (
-        <h2 className="text-lg text-stone-300 font-semibold text-center">
+        <h2 className="text-lg text-stone-400 italic font-semibold text-center">
           This quiz has no questions
         </h2>
       )}
-      <div className="w-full grid grid-cols-2 gap-8">
+      <div className="mx-auto">
         {!(quiz.status === "published") && showAddForm && (
           <QuizQuestionEditor
             onSave={handleAddQuestion}
@@ -246,18 +246,3 @@ export default function QuizEditor() {
   );
 }
 
-// {isCreated && (
-//   <div className="flex px-2 pb-4 space-x-4">
-//     <Button variant="secondary" onClick={generateAIQuizQuestions}>
-//       Generate Questions with AI
-//     </Button>
-//     <Button
-//       variant="secondary"
-//       onClick={() => {
-//         navigate(`/instructor/quizzes/${quizId}/quiz_editor`);
-//       }}
-//     >
-//       Create Questions Manually
-//     </Button>
-//   </div>
-// )}

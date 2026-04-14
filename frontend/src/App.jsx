@@ -24,6 +24,15 @@ import EnrollCourses from "./pages/student/EnrollCourses";
 import CourseMaterials from "./pages/student/CourseMaterials";
 import Study from "./pages/student/Study";
 import EditProfile from "./pages/EditProfile";
+import CreateDiscussion from "./pages/instructor/CreateDiscussion";
+import InstructorDiscussions from "./pages/instructor/InstructorDiscussions";
+import InstructorDiscussionThread from "./pages/instructor/InstructorDiscussionThread";
+import CourseDiscussionList from "./pages/student/CourseDiscussionList";
+import StudentDiscussionThread from "./pages/student/StudentDiscussionThread";
+import CourseLayout from "./components/layout/CourseLayout";
+import GradeDiscussion from "./pages/instructor/GradeDiscussion";
+import VerifyEmail from "./pages/VerifyEmail";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function App() {
   return (
@@ -31,6 +40,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         {/* ######### STUDENT ROUTES ######### */}
 
         <Route
@@ -59,68 +70,88 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/student/course/:courseId/assignments"
-          element={
-            <ProtectedRoute role={"student"}>
-              <AssignmentList />
-            </ProtectedRoute>
-          }
-        />
 
-        <Route
-          path="/student/assignments/:assignmentId/submit"
-          element={
-            <ProtectedRoute role={"student"}>
-              <SubmitAssignment />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/student/course/:courseId" element={<CourseLayout />}>
+          <Route
+            path="assignments"
+            element={
+              <ProtectedRoute role={"student"}>
+                <AssignmentList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="quizzes"
+            element={
+              <ProtectedRoute role={"student"}>
+                <CourseQuizList />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/student/course/:courseId/quizzes"
-          element={
-            <ProtectedRoute role={"student"}>
-              <CourseQuizList />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="assignments/:assignmentId/submit"
+            element={
+              <ProtectedRoute role={"student"}>
+                <SubmitAssignment />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/student/quizzes/:quizId/attempt_quiz"
-          element={
-            <ProtectedRoute role={"student"}>
-              <AttemptQuiz />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="quizzes/:quizId/attempt_quiz"
+            element={
+              <ProtectedRoute role={"student"}>
+                <AttemptQuiz />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/student/quizzes/:quizId/quiz_attempts"
-          element={
-            <ProtectedRoute role={"student"}>
-              <QuizAttemptsList />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="quizzes/:quizId/quiz_attempts"
+            element={
+              <ProtectedRoute role={"student"}>
+                <QuizAttemptsList />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/student/:courseId/study"
-          element={
-            <ProtectedRoute role={"student"}>
-              <Study />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="study"
+            element={
+              <ProtectedRoute role={"student"}>
+                <Study />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/student/course/:courseId/files/"
-          element={
-            <ProtectedRoute role={"student"}>
-              <CourseMaterials />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="files"
+            element={
+              <ProtectedRoute role={"student"}>
+                <CourseMaterials />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="discussions"
+            element={
+              <ProtectedRoute>
+                <CourseDiscussionList />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="threads/:threadId"
+            element={
+              <ProtectedRoute role={"student"}>
+                <StudentDiscussionThread />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
 
         {/* ######### INSTRUCTOR ROUTES ######### */}
         <Route
@@ -149,87 +180,124 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/instructor/course/:courseId" element={<CourseLayout />}>
+          <Route
+            path="files"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <CourseMaterialUpload />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/instructor/course/:courseId/files"
-          element={
-            <ProtectedRoute role={"instructor"}>
-              <CourseMaterialUpload />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="assignments/:assignmentId/submissions"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <ViewSubmissions />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/instructor/assignments/:assignmentId/submissions"
-          element={
-            <ProtectedRoute role={"instructor"}>
-              <ViewSubmissions />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="assignments/create"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <CreateAssignment />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/instructor/assignments/create"
-          element={
-            <ProtectedRoute role={"instructor"}>
-              <CreateAssignment />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="assignments"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <InstructorAssignments />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/instructor/course/:courseId/assignments"
-          element={
-            <ProtectedRoute role={"instructor"}>
-              <InstructorAssignments />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="quizzes"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <InstructorQuizList />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/instructor/course/:courseId/quizzes"
-          element={
-            <ProtectedRoute role={"instructor"}>
-              <InstructorQuizList />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="quizzes/create"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <CreateQuiz />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/instructor/courses/:courseId/quizzes/create"
-          element={
-            <ProtectedRoute role={"instructor"}>
-              <CreateQuiz />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="quizzes/:quizId/quiz_editor"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <QuizEditor />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/instructor/quizzes/:quizId/quiz_editor"
-          element={
-            <ProtectedRoute role={"instructor"}>
-              <QuizEditor />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="quizzes/:quizId/grade"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <GradeQuizAttempt />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/instructor/quizzes/:quizId/grade"
-          element={
-            <ProtectedRoute role={"instructor"}>
-              <GradeQuizAttempt />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="quizzes/:quizId/analytics"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <QuizAnalytics />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/instructor/quizzes/:quizId/analytics"
-          element={
-            <ProtectedRoute role={"instructor"}>
-              <QuizAnalytics />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="discussions"
+            element={
+              <ProtectedRoute>
+                <InstructorDiscussions />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="discussions/create"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <CreateDiscussion />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="threads/:threadId"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <InstructorDiscussionThread />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="threads/:threadId/grade"
+            element={
+              <ProtectedRoute role={"instructor"}>
+                <GradeDiscussion />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
       </Routes>
     </div>
   );
