@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5001",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
 api.interceptors.request.use((config) => {
@@ -20,12 +20,12 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("course");
-      
-      window.location.href = "/"; 
+
+      window.location.href = "/";
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
