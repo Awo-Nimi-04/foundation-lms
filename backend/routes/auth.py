@@ -33,7 +33,7 @@ def generate_verification_token():
     return token, expires
 
 def send_verification_email(user, token):
-    verify_url = f"http://localhost:5173/verify-email?token={token}"
+    verify_url = f"https://foundation-lms-v6pb.vercel.app/verify-email?token={token}"
 
     try:
         api_key = os.environ.get("MAILJET_API_KEY")
