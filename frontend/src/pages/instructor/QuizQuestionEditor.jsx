@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../api/api";
-import { useCourse } from "../../context/CoursecONTEXT.JSX";
+import { useCourse } from "../../context/CourseContext";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";

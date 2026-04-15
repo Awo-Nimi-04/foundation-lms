@@ -7,7 +7,7 @@ import Input from "../../components/ui/Input";
 import Textarea from "../../components/ui/Textarea";
 import PageHeading from "../../components/ui/PageHeading";
 import { useLoading } from "../../context/LoadingContext";
-import { useCourse } from "../../context/CoursecONTEXT.JSX";
+import { useCourse } from "../../context/CourseContext";
 import BackButton from "../../components/ui/BackButton";
 
 export default function CreateDiscussion() {
