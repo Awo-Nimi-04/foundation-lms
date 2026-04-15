@@ -40,13 +40,6 @@ def serialize_post(post, current_user_id, instructor_id, likes_map, user_map):
         "liked_by_instructor": instructor_id in like_user_ids
     }
 
-
-cloudinary.config(
-    cloud_name=os.getenv("CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET")
-)
-
 discussions_bp = Blueprint("discussions", __name__, url_prefix="/discussions")
 
 @discussions_bp.route("/course/<int:course_id>/threads", methods=["POST"])
@@ -70,44 +63,24 @@ def create_thread(course_id):
         return jsonify({"error": "Title and prompt required!"}), 401
 
     # get optional file
-    file = request.files.get("reference_file")
-
-    file_url = None
-    file_name = None
-
-    try:
-        if file:
-            upload_result = cloudinary.uploader.upload(
-                file,
-                resource_type="auto",
-                folder="assignment_references"
-            )
-
-            file_url = upload_result["secure_url"]
-            file_name = file.filename
         
-        thread = DiscussionThread(
-            course_id = course_id,
-            instructor_id = user_id,
-            title = title,
-            prompt = prompt,
-            due_date = due_date,
-            max_score = max_score if max_score else None,
-            reference_file_name=file_name,
-            reference_file_url=file_url,
-        )
+    thread = DiscussionThread(
+        course_id = course_id,
+        instructor_id = user_id,
+        title = title,
+        prompt = prompt,
+        due_date = due_date,
+        max_score = max_score if max_score else None,
+    )
 
-        db.session.add(thread)
-        db.session.commit()
+    db.session.add(thread)
+    db.session.commit()
 
-        return jsonify({
+    return jsonify({
             "message": "Thread created",
             "assignment_id": thread.id,
             # "reference_file_url": file_url,
-        }), 201
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    }), 201
 
 @discussions_bp.route("/course/<int:course_id>/threads", methods=["GET"])
 @jwt_required()

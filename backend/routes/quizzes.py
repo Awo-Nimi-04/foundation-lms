@@ -2,13 +2,13 @@ import re
 import os
 import json
 from openai import OpenAI
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
 from models.quiz import Quiz
 from models.course import Course
 from models.course_material import CourseMaterial
 from models.quiz import QuizQuestion
-from models.quiz_attempt import QuizAttempt
+from models.quiz_attempt import QuizAttempt, QuestionAttempt
 from extensions import db
 from utils.decorators import instructor_required
 from utils.ai_helpers import chunk_text
@@ -23,6 +23,11 @@ gemini_client =  OpenAI(
     api_key=os.getenv("GEMINI_API_KEY"),
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
     )
+
+def normalize_answer(text):
+    if not text:
+        return ""
+    return re.sub(r"\s+", " ", text.strip().lower())
 
 def normalize_choices(choices):
     if isinstance(choices, str):
@@ -232,19 +237,6 @@ def start_quiz_attempt(quiz_id):
     if quiz.status != "published":
         return jsonify({"error": "Quiz not available"}), 403
     
-    # Prevent multiple active attempts
-    existing = QuizAttempt.query.filter_by(
-        quiz_id=quiz_id,
-        student_id=student_id,
-        status="in_progress"
-    ).first()
-
-    if existing:
-        return jsonify({
-            "attempt_id": existing.id,
-            "message": "Resuming attempt"
-        })
-    
     # Temporary flow: cannot start another attempt until other attempts are graded, even if submitted
     latest_submitted_attempt = (
         QuizAttempt.query
@@ -253,28 +245,135 @@ def start_quiz_attempt(quiz_id):
             student_id=student_id,
             status="submitted",
         )
-        .order_by(QuizAttempt.submitted_at.desc())  # or submitted_at
+        .order_by(QuizAttempt.submitted_at.desc())
         .first()
     )
 
     if latest_submitted_attempt and latest_submitted_attempt.status == "submitted":
         return jsonify({
             "attempt_id": latest_submitted_attempt.id,
-            "message": "Wait for instructor to grade latest attempt.",
+            "error": "Wait for instructor to grade latest attempt.",
         }), 500
+    
+
+    questions = QuizQuestion.query.filter_by(quiz_id=quiz_id).all()
+
+    question_list = []
+
+    for question in questions:
+        question_list.append({
+            "id": question.id,
+            "quiz_id": question.quiz_id,
+            "question_text": question.question_text,
+            "question_type": question.question_type,
+            "correct_answer": question.correct_answer,
+            "material_id": question.material_id,
+            "choices": question.choices,
+            "score_per_question": question.score_per_question,
+        })
+    # Prevent multiple active attempts
+    existing = QuizAttempt.query.filter_by(
+        quiz_id=quiz_id,
+        student_id=student_id,
+        status="in_progress"
+    ).first()
+
+    if existing:
+        question_attempts = QuestionAttempt.query.filter_by(
+            attempt_id=existing.id
+        )
+        started_at = existing.started_at
+
+        if datetime.now(timezone.utc) > started_at + timedelta(minutes=quiz.time_limit_minutes):
+            question_lookup = {q.id: q for q in questions}
+            total_score = 0
+
+            for qa in question_attempts:
+                question = question_lookup.get(qa.question_id)
+                if not question:
+                    continue 
+
+                student_answer = (qa.submitted_answer or "").strip()
+
+                norm_student = normalize_answer(student_answer)
+                norm_correct = normalize_answer(question.correct_answer)
+
+                correct = norm_student == norm_correct if student_answer else False
+
+                question_max = question.score_per_question or 0
+                score = question_max if correct else 0.0
+
+                qa.score = score
+                qa.auto_graded = True
+
+                total_score += score
+
+            existing.score = total_score
+            existing.status = "submitted"
+            existing.submitted_at =  datetime.now(timezone.utc)
+
+            db.session.commit()
+
+            return jsonify({"error": "Time expired. Quiz auto submitted"}), 403
+
+        time_limit_minutes = quiz.time_limit_minutes if quiz.time_limit_minutes else None
+
+        end_time = started_at + timedelta(minutes=time_limit_minutes) if time_limit_minutes else None
+
+        return jsonify({
+            "attempt_id": existing.id,
+            "message": "Resuming attempt",
+            "questions": question_list,
+            "answers": {
+                qa.question_id: qa.submitted_answer
+                for qa in question_attempts
+            },
+            "status": existing.status,
+            "end_time": end_time,
+        })
+    
 
     attempt = QuizAttempt(
         quiz_id=quiz_id,
         student_id=student_id,
-        started_at = datetime.now(timezone.utc)
+        started_at=datetime.now(timezone.utc)
     )
 
     db.session.add(attempt)
+    db.session.flush()
+
+    for question in questions:
+        qa = QuestionAttempt(
+            attempt_id=attempt.id,
+            student_id=student_id,
+            question_id=question.id,
+            submitted_answer="",
+            max_score=question.score_per_question or 0,
+        )
+        db.session.add(qa)
+
     db.session.commit()
+
+    question_attempts = QuestionAttempt.query.filter_by(attempt_id = attempt.id)
+
+    started_at = attempt.started_at
+    if datetime.now(timezone.utc) > started_at + timedelta(minutes=quiz.time_limit_minutes):
+        return jsonify({"error": "Time expired", "attempt_id": attempt.id}), 403
+
+    time_limit_minutes = quiz.time_limit_minutes if quiz.time_limit_minutes else None
+
+    end_time = started_at + timedelta(minutes=time_limit_minutes) if time_limit_minutes else None
 
     return jsonify({
         "attempt_id": attempt.id,
-        "message": "Attempt started"
+        "message": "Attempt started",
+        "questions": question_list,
+        "answers": {
+            qa.question_id: qa.submitted_answer 
+            for qa in question_attempts
+        },
+        "status": attempt.status,
+        "end_time": end_time.isoformat() if end_time else None
     })
 
 @quizzes_bp.route("/<int:quiz_id>/publish", methods=["POST"])

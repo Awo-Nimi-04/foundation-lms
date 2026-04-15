@@ -26,10 +26,8 @@ export function AuthProvider({ children }) {
 
       try {
         const res = await api.get("/auth/me");
-        console.log("Success");
         setUser(res.data);
       } catch (err) {
-        console.log("should log out");
         logout();
       }
     };

@@ -10,10 +10,12 @@ import { useCourse } from "../../context/CourseContext";
 import BackButton from "../../components/ui/BackButton";
 import PageHeading from "../../components/ui/PageHeading";
 import StatItem from "../../components/ui/StatItem";
+import { useLoading } from "../../context/LoadingContext";
 
 export default function GradeQuizAttempt() {
   const { quizId } = useParams();
   const { currentCourse } = useCourse();
+  const { showLoading, hideLoading } = useLoading();
   const [students, setStudents] = useState([]);
   const [studentIndex, setStudentIndex] = useState(0);
   const [attempt, setAttempt] = useState();
@@ -36,6 +38,7 @@ export default function GradeQuizAttempt() {
       const res = await api.get(
         `/quiz_attempts/quiz/${quizId}/student/${studentId}/responses`,
       );
+      // console.log(res.data);
 
       setAttempt(res.data);
       if (res.data.status === "submitted") {
@@ -81,6 +84,7 @@ export default function GradeQuizAttempt() {
   };
 
   const handleGradeQuiz = async () => {
+    showLoading("Grading");
     try {
       const res = await api.patch(
         `/quiz_attempts/${attempt.attempt_id}/grade`,
@@ -93,6 +97,8 @@ export default function GradeQuizAttempt() {
       // console.log(res.data);
     } catch (err) {
       console.log(err);
+    } finally {
+      hideLoading();
     }
   };
 
@@ -116,7 +122,9 @@ export default function GradeQuizAttempt() {
         <div className="w-60 md:w-full">
           <PageHeading>Grade Quiz</PageHeading>
         </div>
-        <p className="text-stone-400 italic mt-10">There is no attempt to grade</p>
+        <p className="text-stone-400 italic mt-10">
+          There is no attempt to grade
+        </p>
       </div>
     );
 
@@ -163,7 +171,7 @@ export default function GradeQuizAttempt() {
             <StatItem
               stat={"Score"}
               color={"orange"}
-              value={`${attempt.attempt_score ? `${Number(attempt.attempt_score)} / ${attempt.quiz_total_score}` : "N/A"}`}
+              value={`${attempt.attempt_score || attempt.attempt_score === 0 ? `${Number(attempt.attempt_score)} / ${attempt.quiz_total_score}` : "N/A"}`}
             />
           </div>
         </div>

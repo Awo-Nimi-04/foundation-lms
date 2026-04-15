@@ -42,3 +42,7 @@ class QuestionAttempt(db.Model):
         db.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc)
     )
+    
+    __table_args__ = (
+    db.UniqueConstraint("attempt_id", "question_id", name="unique_question_attempt"),
+    )

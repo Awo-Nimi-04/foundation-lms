@@ -13,7 +13,6 @@ import BackButton from "../../components/ui/BackButton";
 
 export default function QuizAttemptsList() {
   const { quizId } = useParams();
-  const { user } = useAuth();
   const [quiz, setQuiz] = useState();
   const [attempts, setAttempts] = useState([]);
   const [selectedAttempt, setSelectedAttempt] = useState();
@@ -31,6 +30,7 @@ export default function QuizAttemptsList() {
       setQuiz({
         title: res.data.quiz_title,
         maxScore: res.data.quiz_max_score,
+        isDue: res.data.is_due,
       });
     } catch (err) {
       console.error(err);
@@ -109,7 +109,9 @@ export default function QuizAttemptsList() {
       {selectedAttempt && (
         <Card
           title={"Attempt Analytics"}
-          customStyles={"text-center text-stone-200 py-4 my-8 w-[100%]  md:w-[80%]"}
+          customStyles={
+            "text-center text-stone-200 py-4 my-8 w-[100%]  md:w-[80%]"
+          }
         >
           <div className="px-4 space-y-1 mb-2">
             <StatItem
@@ -195,7 +197,7 @@ export default function QuizAttemptsList() {
           </InnerCard>
         </Card>
       )}
-      {selectedAttempt && responses.length > 0 && (
+      {selectedAttempt && responses.length > 0 && quiz.isDue && (
         <Card
           title={`Your Answers`}
           customStyles={"text-center py-4 w-[80%] mx-auto w-[100%] md:w-[80%]"}

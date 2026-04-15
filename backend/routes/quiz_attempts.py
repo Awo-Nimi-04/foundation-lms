@@ -15,7 +15,6 @@ from utils.decorators import instructor_required
 quiz_attempts_bp = Blueprint("quiz_attempts", __name__, url_prefix="/quiz_attempts")
 
 
-
 def normalize_answer(text):
     if not text:
         return ""
@@ -36,11 +35,8 @@ def submit_attempt(attempt_id):
     if attempt.student_id != student_id:
         return jsonify({"error": "Unauthorized"}), 403
 
-    if attempt.status == "submitted":
+    if attempt.status != "in_progress":
         return jsonify({"error": "Already submitted"}), 400
-
-    data = request.get_json()
-    answers = data.get("answers", [])
 
     questions = QuizQuestion.query.filter_by(
         quiz_id=attempt.quiz_id
@@ -48,15 +44,20 @@ def submit_attempt(attempt_id):
 
     question_lookup = {q.id: q for q in questions}
 
+    question_attempts = QuestionAttempt.query.filter_by(
+        attempt_id=attempt.id
+    ).all()
+
     total_score = 0
     total_max_score = sum(q.score_per_question or 0 for q in question_lookup.values())
-    answered_map = {
-        int(item["question_id"]): item.get("answer", "").strip()
-        for item in answers if item.get("question_id") is not None
-    }
 
-    for q_id, question in question_lookup.items():
-        student_answer = answered_map.get(q_id, "")
+    for qa in question_attempts:
+        question = question_lookup.get(qa.question_id)
+        if not question:
+            continue 
+
+        student_answer = (qa.submitted_answer or "").strip()
+
         norm_student = normalize_answer(student_answer)
         norm_correct = normalize_answer(question.correct_answer)
 
@@ -65,17 +66,10 @@ def submit_attempt(attempt_id):
         question_max = question.score_per_question or 0
         score = question_max if correct else 0.0
 
-        total_score += score
+        qa.score = score
+        qa.auto_graded = True
 
-        qa = QuestionAttempt(
-            attempt_id=attempt.id,
-            student_id=attempt.student_id,
-            question_id=q_id,
-            submitted_answer=student_answer,
-            score=score,
-            max_score=question_max,
-        )
-        db.session.add(qa)
+        total_score += score
 
     attempt.score = total_score
     attempt.status = "submitted"
@@ -112,6 +106,10 @@ def get_student_attempts_for_quiz(quiz_id):
         )
     ).all()
 
+    now = datetime.now(timezone.utc)
+
+    is_due = False if quiz.due_date and now < quiz.due_date else True
+        
     quiz_attempts_list = []
 
     for quiz_attempt in quiz_attempts:
@@ -122,6 +120,7 @@ def get_student_attempts_for_quiz(quiz_id):
         "quiz_title": quiz.title,
         "quiz_max_score": quiz.get_max_score(),
         "quiz_attempts": quiz_attempts_list,
+        "is_due": is_due,
     })
 
 @quiz_attempts_bp.route("/<int:quiz_id>", methods=["GET"])
@@ -149,7 +148,7 @@ def get_attempts_for_quiz(quiz_id):
 @quiz_attempts_bp.route("/<int:attempt_id>/quiz_attempt_analytics")
 @jwt_required()
 def quiz_attempt_analytics(attempt_id):
-
+    print("attempt_id:", attempt_id)
     identity = json.loads(get_jwt_identity())
     student_id = int(identity["id"])
 
@@ -353,11 +352,11 @@ def grade_quiz_attempt(attempt_id):
     identity = json.loads(get_jwt_identity())
     instructor_id = int(identity["id"])
 
-    if identity["role"] != "instructor":
-        return jsonify({"error": "Instructors only"}), 403
-
     attempt = QuizAttempt.query.get_or_404(attempt_id)
     quiz = Quiz.query.get_or_404(attempt.quiz_id)
+
+    if attempt.status == "in_progress":
+        return jsonify({"error": "Only submitted attempts can be graded"}), 409
 
     if quiz.instructor_id != instructor_id:
         return jsonify({"error": "Unauthorized"}), 403  
@@ -368,7 +367,6 @@ def grade_quiz_attempt(attempt_id):
     question_attempts = QuestionAttempt.query.filter_by(attempt_id=attempt_id).all()
     question_lookup = {qa.question_id: qa for qa in question_attempts}
 
-    # Apply instructor updates (RAW SCORES ONLY)
     for q_update in question_updates:
         q_id = q_update.get("question_id")
 
@@ -381,22 +379,17 @@ def grade_quiz_attempt(attempt_id):
         if not qa:
             continue
 
-        # optional safety clamp
         qa.score = max(0, min(score, qa.max_score))
 
         qa.manually_graded = True
         qa.auto_graded = False
-        qa.graded_at = datetime.now(timezone.utc)
-
-    # Recompute from truth
-    question_attempts = QuestionAttempt.query.filter_by(attempt_id=attempt_id).all()
 
     total_score = sum(qa.score or 0 for qa in question_attempts)
     max_total = sum(qa.max_score for qa in question_attempts)
 
     attempt.score = total_score
     attempt.status = "graded"
-    attempt.submitted_at = attempt.submitted_at or datetime.now()
+    attempt.graded_at = datetime.now(timezone.utc)
 
     db.session.commit()
 
@@ -541,4 +534,47 @@ def get_student_quiz_responses(quiz_id, student_id):
         "submitted_at": attempt.submitted_at,
         "responses": responses,
         "status": "submitted",
+    })
+
+@quiz_attempts_bp.route("/<int:attempt_id>/save_response", methods=["POST"])
+@jwt_required()
+def save_question_response(attempt_id):
+    identity = json.loads(get_jwt_identity())
+    user_id = int(identity["id"])
+    
+    attempt = QuizAttempt.query.get_or_404(attempt_id)
+    if attempt.student_id != user_id:
+        return jsonify({"error": "Unauthorized. This student does not own this attempt"}), 403
+
+    if attempt.status != "in_progress":
+        return jsonify({"error": "This quiz attempt has already been submitted"}), 409
+    
+    data = request.get_json()
+    answer = (data.get("answer") or "").strip()
+    question_id = data.get("question_id")
+    print(answer, question_id)
+
+    question_attempt = QuestionAttempt.query.filter_by(
+        attempt_id=attempt_id,
+        question_id=question_id
+    ).first()
+
+    if not question_attempt:
+        question_attempt = QuestionAttempt(
+            attempt_id=attempt_id,
+            question_id=question_id,
+            submitted_answer=answer
+        )
+        db.session.add(question_attempt)
+    else:
+        question_attempt.submitted_answer = answer
+
+
+    db.session.add(question_attempt)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Answer saved",
+        "question_attempt_id": question_attempt.id,
+        "answer": question_attempt.submitted_answer
     })

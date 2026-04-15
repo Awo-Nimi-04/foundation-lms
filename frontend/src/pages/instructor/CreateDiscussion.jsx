@@ -18,7 +18,6 @@ export default function CreateDiscussion() {
   const [prompt, setPrompt] = useState("");
   const [totalPoints, setTotalPoints] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [file, setFile] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,10 +29,6 @@ export default function CreateDiscussion() {
     formData.append("due_date", dueDate);
     formData.append("course_id", currentCourse.id);
     formData.append("max_score", totalPoints);
-
-    if (file) {
-      formData.append("reference_file", file);
-    }
 
     showLoading("Creating Discussion...");
 
@@ -99,36 +94,6 @@ export default function CreateDiscussion() {
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
-          <div className="flex flex-col space-y-1">
-            <label className="text-sm text-stone-300 font-medium">
-              Reference File (optional)
-            </label>
-            {!file && (
-              <label className="flex items-center p-2 border border-stone-600 rounded-lg bg-stone-900 cursor-pointer">
-                <span className="text-stone-300 p-2">Upload file</span>
-                <input
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => setFile(e.target.files[0])}
-                />
-              </label>
-            )}
-            {file && (
-              <div className="flex items-center justify-between p-2 border border-stone-600 rounded-lg bg-stone-900 cursor-pointer">
-                <p className="text-blue-300 line-clamp-1 overflow-auto">
-                  {file.name}
-                </p>
-                <Button
-                  variant="tertiary"
-                  onClick={() => {
-                    setFile(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
-          </div>
 
           <div className="text-center my-3">
             <Button type="submit" variant="primary" customStyles={"w-full"}>

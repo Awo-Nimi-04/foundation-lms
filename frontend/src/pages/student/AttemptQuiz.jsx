@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
 import Button from "../../components/ui/Button";
@@ -8,7 +8,8 @@ import Textarea from "../../components/ui/Textarea";
 import Radio from "../../components/ui/Radio";
 import { useCourse } from "../../context/CourseContext";
 import PageHeading from "../../components/ui/PageHeading";
-import BackButton from "../../components/ui/BackButton";
+import { debounce } from "lodash";
+import { useLoading } from "../../context/LoadingContext";
 
 const formatTime = (ms) => {
   const totalSeconds = Math.floor(ms / 1000);
@@ -22,9 +23,10 @@ export default function AttemptQuiz() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const { currentCourse } = useCourse();
+  const { showLoading, hideLoading } = useLoading();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [attemptId, setAttemptId] = useState();
-  const [answerList, setAnswerList] = useState([]);
+  const [answers, setAnswers] = useState({});
   const [quiz, setQuiz] = useState();
   const [isExpiredQuiz, setIsExpiredQuiz] = useState(false);
   const [questions, setQuestions] = useState([]);
@@ -72,19 +74,6 @@ export default function AttemptQuiz() {
     }
   };
 
-  const fetchQuestions = async () => {
-    try {
-      const res = await api.get(`/questions/${quizId}`);
-      setQuestions(res.data.message);
-      const now = Date.now();
-      const end = now + quiz.time_limit * 60 * 1000;
-
-      setEndTime(end);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const handleBeginQuiz = async () => {
     const expired = isQuizExpired(quiz.due_date);
     if (expired) {
@@ -94,16 +83,34 @@ export default function AttemptQuiz() {
     try {
       const res = await api.post(`quizzes/${quizId}/start`);
       // console.log(res.data);
-      fetchQuestions();
-      setHasStarted(true);
       setAttemptId(res.data.attempt_id);
+      setQuestions(res.data.questions);
+      setAnswers(res.data.answers || {});
+      setHasStarted(true);
+      setEndTime(new Date(res.data.end_time).getTime());
     } catch (err) {
-      const message = err.response?.data?.message || "Something went wrong";
+      const message = err.response?.data?.error || "Something went wrong";
 
       alert(message);
       console.error(err);
     }
   };
+
+  const debouncedSave = useRef(
+    debounce(async (questionId, value, attemptId) => {
+      // console.log(attemptId, questionId, value)
+      try {
+        if (!attemptId) return;
+
+        await api.post(`/quiz_attempts/${attemptId}/save_response`, {
+          question_id: questionId,
+          answer: value,
+        });
+      } catch (err) {
+        console.error("Failed to save answer:", err);
+      }
+    }, 500),
+  ).current;
 
   const handlePreviousQuestion = () => {
     const currentIndex =
@@ -120,34 +127,28 @@ export default function AttemptQuiz() {
   };
 
   const handleInputAnswer = (e, questionId) => {
-    setAnswerList((prevState) => {
-      const existing = prevState.find((ans) => ans.question_id === questionId);
-      if (existing) {
-        return prevState.map((ans) =>
-          ans.question_id === questionId
-            ? { ...ans, answer: e.target.value }
-            : ans,
-        );
-      } else {
-        return [
-          ...prevState,
-          { question_id: questionId, answer: e.target.value },
-        ];
-      }
-    });
+    const value = e.target.value;
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: value,
+    }));
+
+    debouncedSave(questionId, value, attemptId);
   };
 
   const handleSubmitQuiz = async () => {
+    showLoading();
     try {
-      const res = await api.post(`/quiz_attempts/${attemptId}/submit`, {
-        answers: answerList,
-      });
-      alert("Quiz has been submitted!");
+      const res = await api.post(`/quiz_attempts/${attemptId}/submit`);
+      alert(`${quiz.title} has been submitted!`);
       navigate(`/student/course/${currentCourse.id}/quizzes`);
     } catch (err) {
       console.log(err);
+    } finally {
+      hideLoading();
     }
   };
+
   if (!quiz) return <p>Quiz Loading...</p>;
 
   return (
@@ -200,7 +201,7 @@ export default function AttemptQuiz() {
               <div className="text-left">
                 <Textarea
                   label={"Response"}
-                  value={answerList[currentQuestionIndex]?.answer}
+                  value={answers[questions[currentQuestionIndex].id] || ""}
                   onChange={(event) =>
                     handleInputAnswer(event, questions[currentQuestionIndex].id)
                   }
@@ -220,7 +221,8 @@ export default function AttemptQuiz() {
                         name={`question-${questions[currentQuestionIndex].id}`}
                         value={choice}
                         checked={
-                          answerList[currentQuestionIndex]?.answer === choice
+                          answers[questions[currentQuestionIndex]?.id] ===
+                          choice
                         }
                         onChange={(event) =>
                           handleInputAnswer(

@@ -75,7 +75,7 @@ export default function InstructorQuizList() {
           <ListCard
             key={quiz.id}
             title={quiz.title}
-            customStyles="w-[100%] lg:w-[80%]"
+            customStyles="w-[100%] lg:w-[80%] my-2"
           >
             <div>
               {quizStatusFilter === "Draft" && (
@@ -104,7 +104,7 @@ export default function InstructorQuizList() {
               )}
 
               {quizStatusFilter === "Published" && (
-                <div className="flex space-x-1">
+                <div className="flex space-x-1 md:space-x-2">
                   <Button
                     customStyles={"w-10 md:w-20"}
                     variant="tertiary"
