@@ -25,7 +25,7 @@ migrate = Migrate(app, db)
 
 CORS(
     app,
-    resources={r"/*": {"origins": "http://localhost:5173"}},
+    resources={r"/*": {"origins": os.getenv("FRONTEND_URL")}},
     supports_credentials=True, 
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
