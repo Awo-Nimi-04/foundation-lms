@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
-import DashboardLayout from "./layout/Dashboardlayout";
 import { useAuth } from "../context/AuthContext";
+import DashboardLayout from "./layout/DashboardLayout"
 
 export default function ProtectedRoute({ children, role }) {
   const { user } = useAuth();
