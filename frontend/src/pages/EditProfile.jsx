@@ -12,6 +12,7 @@ import OTPInput from "../components/ui/OTPInput";
 export default function EditProfile() {
   const { user, login } = useAuth();
   const { showLoading, hideLoading } = useLoading();
+  const [loading, setLoading] = useState();
   const [preview, setPreview] = useState(user.photo || null);
   const [file, setFile] = useState(null);
   const [otpVerified, setOtpVerified] = useState(false);
@@ -91,23 +92,28 @@ export default function EditProfile() {
   };
 
   const handleRequestOtp = async () => {
+    setLoading(true);
     try {
-
       await api.get("/auth/send-otp");
       setShowOtpInput(true);
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleVerifyOtp = async () => {
+    setLoading(true);
     try {
       const res = await api.post("/auth/verify-otp", { otp });
       setOtpVerified(true);
       setShowOtpInput(false);
     } catch (err) {
       console.error(err);
-      alert("OTP verification failed!")
+      alert("OTP verification failed!");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -127,13 +133,16 @@ export default function EditProfile() {
               </p>
             </div>
             <OTPInput onChange={(value) => setOtp(value)} />
-            <div className="space-x-2">
+            <div className="flex items-center space-x-2">
               <Button
                 customStyles={"w-20"}
                 variant="secondary"
                 onClick={handleVerifyOtp}
               >
-                Verify
+                {!loading && "Verify"}
+                {loading && (
+                  <div className="w-6 h-6 border-4 border-stone-600 border-t-stone-200 rounded-full animate-spin mx-auto p-2" />
+                )}
               </Button>
               <Button
                 customStyles={"w-20"}
@@ -212,7 +221,11 @@ export default function EditProfile() {
           variant="primary"
           onClick={handleRequestOtp}
         >
-          Change Password
+          {!loading && "Change Password"}
+
+          {loading && (
+            <div className="w-6 h-6 border-4 border-stone-600 border-t-stone-200 rounded-full animate-spin mx-auto p-2" />
+          )}
         </Button>
       )}
       {otpVerified && (

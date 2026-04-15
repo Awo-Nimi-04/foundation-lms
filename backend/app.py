@@ -23,9 +23,14 @@ app = Flask(__name__)
 
 migrate = Migrate(app, db)
 
+origins = [
+    "http://localhost:5173",
+    os.getenv("FRONTEND_URL")
+]
+
 CORS(
     app,
-    resources={r"/*": {"origins": os.getenv("FRONTEND_URL")}},
+    resources={r"/*": {"origins": origins}},
     supports_credentials=True, 
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],

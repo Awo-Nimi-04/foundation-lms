@@ -7,6 +7,7 @@ import OTPInput from "../components/ui/OTPInput";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import BackButton from "../components/ui/BackButton";
+import { s } from "framer-motion/client";
 
 export default function ForgotPassword() {
   const { login } = useAuth();
@@ -14,9 +15,11 @@ export default function ForgotPassword() {
   const [otp, setOtp] = useState("");
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleRequestOtp = async () => {
+    setLoading(true);
     try {
       await api.post("auth/otp-login", { otp, email });
       setShowOtpInput(true);
@@ -25,10 +28,13 @@ export default function ForgotPassword() {
       const error = err.response?.data?.error || "Something went wrong.";
       setErrorMessage(error);
       console.log(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleVerifyOtp = async () => {
+    setLoading(true);
     try {
       const res = await api.post("/auth/verify-otp-login", { otp, email });
       login(res.data.access_token, res.data.user);
@@ -41,6 +47,8 @@ export default function ForgotPassword() {
       const error = err.response?.data?.error || "Something went wrong.";
       setErrorMessage(error);
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,7 +57,7 @@ export default function ForgotPassword() {
       <div className="absolute top-11 left-5">
         <BackButton />
       </div>
-      {showOtpInput && (
+      {!showOtpInput && (
         <div className="absolute z-50 bg-black/50 w-full h-full p-3">
           <AnimatePresence>
             <motion.div
@@ -75,13 +83,16 @@ export default function ForgotPassword() {
                   </p>
                 )}
               </div>
-              <div className="space-x-2">
+              <div className="flex items-center space-x-2">
                 <Button
                   customStyles={"w-20"}
                   variant="secondary"
                   onClick={handleVerifyOtp}
                 >
-                  Verify
+                  {!loading && "Verify"}
+                  {loading && (
+                    <div className="w-6 h-6 border-4 border-stone-600 border-t-stone-200 rounded-full animate-spin mx-auto p-2" />
+                  )}
                 </Button>
                 <Button
                   customStyles={"w-20"}
@@ -119,7 +130,10 @@ export default function ForgotPassword() {
             onClick={handleRequestOtp}
             className="mt-3 w-40 bg-violet-600 p-2 text-stone-300 font-semibold rounded-md shadow-lg cursor-pointer hover:bg-violet-700"
           >
-            Get OTP
+            {!loading && "Get OTP"}
+            {loading && (
+              <div className="w-8 h-8 mx-auto border-4 border-stone-600 border-t-stone-200 rounded-full animate-spin" />
+            )}
           </button>
         </div>
       </div>
