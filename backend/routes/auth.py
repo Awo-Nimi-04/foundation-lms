@@ -17,6 +17,8 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 bcrypt = Bcrypt()
 
+frontend_url = os.getenv("FRONTEND_URL") if os.getenv("FRONTEND_URL") else "http://localhost:5173"
+
 cloudinary.config(
     cloud_name=os.getenv("CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -33,7 +35,7 @@ def generate_verification_token():
     return token, expires
 
 def send_verification_email(user, token):
-    verify_url = f"https://foundation-lms-v6pb.vercel.app/verify-email?token={token}"
+    verify_url = f"{frontend_url}/verify-email?token={token}"
 
     try:
         api_key = os.environ.get("MAILJET_API_KEY")
