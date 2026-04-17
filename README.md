@@ -86,7 +86,7 @@ Supabase Postgre SQL
 
     Production API URL: https://foundation-lms.onrender.com/
 
-### Note:Check spam/junk for any emails sent by application; icloud may filter spam emails sent to any icloud accounts
+### Note: Check spam/junk for any emails sent by application; icloud may filter spam emails sent to any icloud accounts
 
 # Professional Conduct and Integrity
 ChatGPT was used extensively during the design phase of this project. It was also used for troubleshooting and finetuning analytics algorithms as well as backend requests to the AI model used (Gemini flash 2.5).
