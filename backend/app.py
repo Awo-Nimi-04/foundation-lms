@@ -25,6 +25,7 @@ migrate = Migrate(app, db)
 
 origins = [
     "http://localhost:5173",
+    "https://foundation-lms.vercel.app/",
     os.getenv("FRONTEND_URL")
 ]
 
