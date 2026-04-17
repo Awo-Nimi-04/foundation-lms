@@ -93,7 +93,7 @@ export default function ViewSubmissions() {
     );
 
   return (
-    <div className=" flex flex-col items-center text-center min-h-screen">
+    <div className="relative flex flex-col items-center text-center min-h-screen">
       <div className="absolute top-5 left-5">
         <BackButton />
       </div>

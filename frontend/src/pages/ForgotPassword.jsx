@@ -57,7 +57,7 @@ export default function ForgotPassword() {
       <div className="absolute top-11 left-5">
         <BackButton />
       </div>
-      {!showOtpInput && (
+      {showOtpInput && (
         <div className="absolute z-50 bg-black/50 w-full h-full p-3">
           <AnimatePresence>
             <motion.div
