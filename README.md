@@ -26,15 +26,15 @@
     export DATABASE_URL=your_local_db_url
 
     # External Services
-    GEMINI_API_KEY=
-    JWT_TOKEN=
+    + GEMINI_API_KEY=
+    + JWT_TOKEN=
 
-    MAILJET_API_KEY=
-    MAILJET_SECRET_KEY=
+    + MAILJET_API_KEY=
+    + MAILJET_SECRET_KEY=
 
-    CLOUDINARY_API_KEY=
-    CLOUDINARY_API_SECRET=
-    CLOUD_NAME=
+    + CLOUDINARY_API_KEY=
+    + CLOUDINARY_API_SECRET=
+    + CLOUD_NAME=
 
     If you do not provide the external API keys, the app can still run with limited functionality:
 
